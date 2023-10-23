@@ -1,7 +1,9 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("com.google.gms.google-services")
 }
+
 
 android {
     namespace = "com.example.testgeneratorphoto"
@@ -10,7 +12,10 @@ android {
     buildFeatures {
         viewBinding = true
     }
-
+    packagingOptions {
+        exclude ("META-INF/INDEX.LIST")
+        exclude ("META-INF/DEPENDENCIES")
+    }
     defaultConfig {
         applicationId = "com.example.testgeneratorphoto"
         minSdk = 26
@@ -42,6 +47,14 @@ android {
 }
 
 dependencies {
+    implementation("com.google.android.gms:play-services-mlkit-face-detection:17.1.0")
+    implementation(platform("com.google.firebase:firebase-bom:32.3.1"))
+    implementation ("com.loopj.android:android-async-http:1.4.10")
+    implementation ("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-analytics-ktx")
+    implementation ("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-database")
+    implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.squareup.picasso:picasso:2.71828")
     implementation("com.uploadcare.android.library:uploadcare-android:3.1.0")
     implementation("com.squareup.okhttp3:okhttp:4.10.0")

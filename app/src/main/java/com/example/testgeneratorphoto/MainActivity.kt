@@ -1,53 +1,101 @@
 package com.example.testgeneratorphoto
 
+import Manage
+import android.annotation.SuppressLint
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.GridLayoutManager
 import com.example.testgeneratorphoto.databinding.ActivityMainBinding
-import com.squareup.picasso.Picasso
 import org.json.JSONObject
+import com.google.firebase.auth.FirebaseAuth
+
 import com.github.kittinunf.fuel.Fuel
 import com.github.kittinunf.fuel.core.extensions.jsonBody
 import com.github.kittinunf.result.Result
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     lateinit var bind: ActivityMainBinding
+    val manage = Manage()
+    private lateinit var auth: FirebaseAuth
 
+
+
+    @SuppressLint("SuspiciousIndentation")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         bind = ActivityMainBinding.inflate(layoutInflater)
         setContentView(bind.root)
+        auth = Firebase.auth
+        lifecycleScope.launch {
+            val allModels = manage.getAllCollections()
+            Log.i("allModels", allModels.toString())
+
+            val adapter = StyleAdapter(allModels)
+            bind.recyclerView?.layoutManager = GridLayoutManager(this@MainActivity, 2)
+            bind.recyclerView?.adapter = adapter
+
+            adapter.setOnItemClickListener { prompt ->
+                // Здесь можно выполнить действия с промптом
+                Log.i("PROMPT", prompt.toString())
+
 
         bind.generate.setOnClickListener {
-            createImageWithRetry("""
+            val inputText = bind.prompt.text.toString()
+            lifecycleScope.launch {
+                val translatedText = manage.translator(inputText, "uk")
+                    Log.i("TEXT", translatedText)
+                val reque =    """
     {
-        "model_id": "bubeilijiedemoxing",
-        "prompt": "${bind.prompt.text.toString()}",
-        "negative_prompt": "bad quality,low details, anime style",
+        "model_id": "${prompt.modelId.toString()}",
+        "prompt": "$translatedText  ${prompt.prompt.toString()}",
+        "negative_prompt": "${prompt.negativePrompt.toString()}",
         "width": "512",
-        "height": "512",
+        "height": "768", 
         "seed": null,
-        "lora_model": "detailtweakerlora",
-        "lora_strength": null
+	  "lora_model": ${prompt.lora},
+	  "lora_strength": 1
     }
-    """.trimIndent(), "https://api.midjourneyapi.xyz/sd/txt2img") { imageUrl ->
-                runOnUiThread {
-                    Log.i("URL", imageUrl)
-                    Picasso.get().load(imageUrl).into(bind.imageView)
+    """.trimIndent().toString()
+                Log.i("reque", reque)
+
+                    createImageWithRetry(
+                        reque, "https://api.midjourneyapi.xyz/sd/txt2img"
+                    ) { imageUrl ->
+                        runOnUiThread {
+                            Log.i("URL", imageUrl)
+                            intent = Intent(this@MainActivity, Photo_Activity::class.java)
+                            intent.putExtra("imageUrl", imageUrl)
+                            startActivity(intent)
+                            //Picasso.get().load(imageUrl).into(bind.imageView)
+                        }
+                    }
                 }
+            }
+
+
             }
         }
         bind.selfi?.setOnClickListener {
-            val intent = Intent(this, changePhoto::class.java)
+            val intent = Intent(this@MainActivity, changePhoto::class.java)
             startActivity(intent)
 
         }
     }
+    public override fun onStart() {
+        super.onStart()
 
-     fun createImageWithRetry(json: String, apiUrl: String, callback: (String) -> Unit) {
+        val currentUser = auth.currentUser
+    }
+
+    fun createImageWithRetry(json: String, apiUrl: String, callback: (String) -> Unit) {
 
          val apiKey = "a3dec967-0738-4529-a904-3693bf1c208f"
          val handler = Handler(Looper.getMainLooper())

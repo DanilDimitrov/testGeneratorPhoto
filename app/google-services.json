@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "540672127481",
+    "project_id": "aispace-db207",
+    "storage_bucket": "aispace-db207.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:540672127481:android:86ad35ce98db5939dd4d28",
+        "android_client_info": {
+          "package_name": "com.example.testgeneratorphoto"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBfrj47JhVHpOxRqFx1wd8OiBV3JZDTIVc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,5 +1,6 @@
 package com.example.testgeneratorphoto
 
+import Manage
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -7,12 +8,17 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.os.postDelayed
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.GridLayoutManager
 import com.example.testgeneratorphoto.databinding.ActivityChangePhotoBinding
 import com.github.kittinunf.fuel.Fuel
 import com.github.kittinunf.fuel.core.extensions.jsonBody
 import com.github.kittinunf.result.Result
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.face.FaceDetection
+import com.google.mlkit.vision.face.FaceDetector
 import com.squareup.picasso.Picasso
 import com.uploadcare.android.library.api.UploadcareClient
 import kotlinx.coroutines.Dispatchers
@@ -35,12 +41,15 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
     lateinit var bind: ActivityChangePhotoBinding
     private val REQUEST_IMAGE_PICK = 1
      var fileValue: String = ""
-    val apiKey = "Bearer api-7aa8f78965f911ee9e1fbef530bcf532"
+    val apiKey = "Bearer api-f1c9b6f96dce11eea95ce67244d2bd83"
     val handler = Handler(Looper.getMainLooper())
 
     val uploadcare = UploadcareClient("8e5546827ea347b7479c", "9a60e9e2427b72234e5d")
+    val manage = Manage()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
+
         super.onCreate(savedInstanceState)
         bind = ActivityChangePhotoBinding.inflate(layoutInflater)
         setContentView(bind.root)
@@ -55,26 +64,49 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
             startActivityForResult(intent, REQUEST_IMAGE_PICK)
         }
 
-        bind.generate.setOnClickListener {
-            createImageWithRetry("""
-                {
-                    "prompt": "[elf | people] in the forest, hdr, realism",
-                    "imagePath": "https://ucarecdn.com/${fileValue.toString()}/-/preview/500x500/-/quality/smart/-/format/auto/",
-                    "modelId": "65153a1d6173e0279c96d006",
-                    "negativePrompt": "[deformed | disfigured], poorly drawn, [bad : wrong] anatomy, [extra | missing | floating | disconnected] limb, (mutated hands and fingers), blurry",
-                    "guidanceScale": 18, 
-                    "strength" : 0.5, 
-                    "count" : 1, 
-                    "styleId": "64e036bafd1c84b45905c9cf",
-                    "height": 512,
-                    "steps": 22
-                }
-            """.trimIndent(), "https://creator.aitubo.ai/api/job/create") { imageUrl ->
+        lifecycleScope.launch {
+            val allModels = manage.getAllCollections()
+            Log.i("allModels", allModels.toString())
+
+            val adapter = StyleAdapter(allModels)
+            bind.recyclerView.layoutManager = GridLayoutManager(this@changePhoto, 2)
+            bind.recyclerView.adapter = adapter
+
+            adapter.setOnItemClickListener { prompt ->
+                // Здесь можно выполнить действия с промптом
+                Log.i("PROMPT", prompt.toString())
+
+
+                bind.generate.setOnClickListener {
+                    val reque =    """
+    {
+        "model_id": "${prompt.modelId.toString()}",
+        "controlModel": "${prompt.controlModel}",
+        "imagePath": "https://ucarecdn.com/${fileValue}/-/preview/512x768/-/quality/smart/-/format/auto/",
+        "prompt": "${prompt.prompt.toString()}",
+        "negative_prompt": "${prompt.negativePrompt.toString()}",
+        "width": 512,
+        "strength" : ${prompt.strength},
+        "height": 768, 
+        "seed": null,
+	  "lora_model": ${prompt.lora},
+	  "lora_strength": 1, 
+      "steps": ${prompt.steps}
+    }
+    """.trimIndent().toString()
+                    Log.i("reque", reque)
+            createImageWithRetry(
+                reque, "https://creator.aitubo.ai/api/job/create") { imageUrl ->
                 runOnUiThread {
                     Log.i("URL", imageUrl)
-                    Picasso.get().load(imageUrl).into(bind.imageView2)
+                    intent = Intent(this@changePhoto, Photo_Activity::class.java)
+                    intent.putExtra("imageUrl", imageUrl)
+                    startActivity(intent)
+                    //Picasso.get().load(imageUrl).into(bind.imageView)
                 }
             }
+        }
+    }
         }
     }
 
@@ -84,55 +116,72 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
             val selectedImageUri: Uri? = data.data
 
             if (selectedImageUri != null) {
-                runOnUiThread { bind.imageView2.setImageURI(selectedImageUri) }
-                val projection = arrayOf(MediaStore.Images.Media.DATA)
-                val cursor = contentResolver.query(selectedImageUri, projection, null, null, null)
+                // FACE DETECTOR
+                val image: InputImage = InputImage.fromFilePath(this, selectedImageUri)
 
-                cursor?.use {
-                    val columnIndex = it.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
-                    it.moveToFirst()
-                    val filePath = it.getString(columnIndex)
-                    val file = File(filePath)
+                val faceDetector: FaceDetector = FaceDetection.getClient()
 
-                    val apiKey = "8e5546827ea347b7479c"
-                    val uploadUrl = "https://upload.uploadcare.com/base/"
-                    val client = OkHttpClient()
-                    val requestBody = MultipartBody.Builder()
-                        .setType(MultipartBody.FORM)
-                        .addFormDataPart("UPLOADCARE_PUB_KEY", apiKey)
-                        .addFormDataPart("UPLOADCARE_STORE", "auto")
-                        .addFormDataPart(
-                            "file",
-                            file.name,
-                            file.asRequestBody("image/*".toMediaTypeOrNull())
-                        )
-                        .build()
+                faceDetector.process(image)
+                    .addOnSuccessListener { faces ->
+                        if (faces.isNotEmpty()) {
+                            Log.i("FACE DETECTION", "FACE YES")
+                            runOnUiThread { bind.imageView2.setImageURI(selectedImageUri) }
+                            val projection = arrayOf(MediaStore.Images.Media.DATA)
+                            val cursor = contentResolver.query(selectedImageUri, projection, null, null, null)
 
-                    val request = Request.Builder()
-                        .url(uploadUrl)
-                        .post(requestBody)
-                        .build()
+                            cursor?.use {
+                                val columnIndex = it.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+                                it.moveToFirst()
+                                val filePath = it.getString(columnIndex)
+                                val file = File(filePath)
 
-                    client.newCall(request).enqueue(object : Callback {
-                        override fun onFailure(call: Call, e: IOException) {
-                            Log.e("NetworkError", e.message ?: "Unknown error")
-                        }
+                                val apiKey = "8e5546827ea347b7479c"
+                                val uploadUrl = "https://upload.uploadcare.com/base/"
+                                val client = OkHttpClient()
+                                val requestBody = MultipartBody.Builder()
+                                    .setType(MultipartBody.FORM)
+                                    .addFormDataPart("UPLOADCARE_PUB_KEY", apiKey)
+                                    .addFormDataPart("UPLOADCARE_STORE", "auto")
+                                    .addFormDataPart(
+                                        "file",
+                                        file.name,
+                                        file.asRequestBody("image/*".toMediaTypeOrNull())
+                                    )
+                                    .build()
 
-                        override fun onResponse(call: Call, response: Response) {
-                            if (response.isSuccessful) {
-                                val responseBody = response.body?.string()
-                                Log.i("LOG", responseBody.toString())
-                                val jsonObject = JSONObject(responseBody)
+                                val request = Request.Builder()
+                                    .url(uploadUrl)
+                                    .post(requestBody)
+                                    .build()
 
-                                fileValue = jsonObject.getString("file")
-                                Log.i("LOG", fileValue.toString())
+                                client.newCall(request).enqueue(object : Callback {
+                                    override fun onFailure(call: Call, e: IOException) {
+                                        Log.e("NetworkError", e.message ?: "Unknown error")
+                                    }
 
-                            } else {
-                                // Handle the response error here
+                                    override fun onResponse(call: Call, response: Response) {
+                                        if (response.isSuccessful) {
+                                            val responseBody = response.body?.string()
+                                            Log.i("LOG", responseBody.toString())
+                                            val jsonObject = JSONObject(responseBody)
+
+                                            fileValue = jsonObject.getString("file")
+                                            Log.i("LOG", fileValue.toString())
+
+                                        } else {
+                                            // Handle the response error here
+                                        }
+                                    }
+                                })
                             }
+                        } else {
+                            Toast.makeText(this, "Change photo", Toast.LENGTH_SHORT).show()
                         }
-                    })
-                }
+                    }
+                    .addOnFailureListener { e ->
+                        e.printStackTrace()
+                    }
+               // FACE Detector END
             }
         }
     }
@@ -239,4 +288,10 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
 
         sendRequest()
     }
+
+
+
+
+
+
 }

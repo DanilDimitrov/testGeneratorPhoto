@@ -1,17 +1,30 @@
 package com.example.testgeneratorphoto
 
+import CategoryAdapter
 import Manage
+import StyleAdapter
 import android.content.Intent
+import android.content.res.Resources
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
+import android.view.ViewGroup
+import android.widget.ImageButton
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.core.view.marginStart
+import androidx.core.widget.NestedScrollView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.testgeneratorphoto.databinding.ActivityChangePhotoBinding
 import com.github.kittinunf.fuel.Fuel
 import com.github.kittinunf.fuel.core.extensions.jsonBody
@@ -19,7 +32,6 @@ import com.github.kittinunf.result.Result
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
-import com.squareup.picasso.Picasso
 import com.uploadcare.android.library.api.UploadcareClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -43,16 +55,23 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
      var fileValue: String = ""
     val apiKey = "Bearer api-f1c9b6f96dce11eea95ce67244d2bd83"
     val handler = Handler(Looper.getMainLooper())
-
     val uploadcare = UploadcareClient("8e5546827ea347b7479c", "9a60e9e2427b72234e5d")
     val manage = Manage()
+    val uiIntarface = UIIntreface()
+    var width: Int = 0
+    var height: Int = 0
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
-
         super.onCreate(savedInstanceState)
+
         bind = ActivityChangePhotoBinding.inflate(layoutInflater)
         setContentView(bind.root)
+        // UI
+        bind.textApp.paint.shader = uiIntarface.textApp(bind.textApp)
+
+        // UI CLOSE
 
         bind.photo.setOnClickListener {
             val goToPhoto = Intent(this, MainActivity::class.java)
@@ -66,49 +85,102 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
 
         lifecycleScope.launch {
             val allModels = manage.getAllCollections()
+             val categories = HashSet<String>()
+
+            for(categoria in allModels[2]){
+                categories.add(categoria.category)
+            }
+
             Log.i("allModels", allModels.toString())
+            Log.i("categories", categories.toString())
 
-            val adapter = StyleAdapter(allModels)
-            bind.recyclerView.layoutManager = GridLayoutManager(this@changePhoto, 2)
-            bind.recyclerView.adapter = adapter
 
-            adapter.setOnItemClickListener { prompt ->
-                // Здесь можно выполнить действия с промптом
+            // Header adapter
+            val headerAdapter = HeaderAdapter(allModels[0])
+            val headerLayoutManager = LinearLayoutManager(this@changePhoto, LinearLayoutManager.HORIZONTAL, false)
+            headerLayoutManager.stackFromEnd = true
+            bind.recyclerView.adapter = headerAdapter
+            bind.recyclerView.layoutManager = headerLayoutManager
+
+            val centerPosition = headerAdapter.itemCount / 2
+            bind.recyclerView.scrollToPosition(centerPosition)
+
+            headerAdapter.setOnItemClickListener { prompt ->
                 Log.i("PROMPT", prompt.toString())
 
-
                 bind.generate.setOnClickListener {
-                    val reque =    """
-    {
-        "model_id": "${prompt.modelId.toString()}",
-        "controlModel": "${prompt.controlModel}",
-        "imagePath": "https://ucarecdn.com/${fileValue}/-/preview/512x768/-/quality/smart/-/format/auto/",
-        "prompt": "${prompt.prompt.toString()}",
-        "negative_prompt": "${prompt.negativePrompt.toString()}",
-        "width": 512,
-        "strength" : ${prompt.strength},
-        "height": 768, 
-        "seed": null,
-	  "lora_model": ${prompt.lora},
-	  "lora_strength": 1, 
-      "steps": ${prompt.steps}
-    }
-    """.trimIndent().toString()
-                    Log.i("reque", reque)
-            createImageWithRetry(
-                reque, "https://creator.aitubo.ai/api/job/create") { imageUrl ->
-                runOnUiThread {
-                    Log.i("URL", imageUrl)
-                    intent = Intent(this@changePhoto, Photo_Activity::class.java)
-                    intent.putExtra("imageUrl", imageUrl)
-                    startActivity(intent)
-                    //Picasso.get().load(imageUrl).into(bind.imageView)
+                    makeReq(prompt)
                 }
             }
+            // Header adapter END
+
+            // Popular adapter
+            val popularAdapter = PopularAdapter(allModels[1])
+            val popularLayoutManager = LinearLayoutManager(this@changePhoto, LinearLayoutManager.HORIZONTAL, false)
+            bind.popular.adapter = popularAdapter
+            bind.popular.layoutManager = popularLayoutManager
+
+            popularAdapter.setOnItemClickListener { prompt ->
+                Log.i("PROMPT", prompt.toString())
+
+                bind.generate.setOnClickListener {
+                    makeReq(prompt)
+                }
+            }
+            // Popular adapter END
+
+            //all styles
+            for (category in categories) {
+                // Создаем заголовок категории
+                val categoryHeader = TextView(this@changePhoto)
+                val params = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                categoryHeader.text = category
+                categoryHeader.textSize = 17f
+                params.marginStart = (12 * Resources.getSystem().displayMetrics.density).toInt()
+                params.topMargin = (8 * Resources.getSystem().displayMetrics.density).toInt()
+                params.bottomMargin = (8 * Resources.getSystem().displayMetrics.density).toInt()
+
+                categoryHeader.setTextColor(ContextCompat.getColor(this@changePhoto, R.color.white))
+                categoryHeader.layoutParams = params
+                bind.linear.addView(categoryHeader)
+
+                // Создаем RecyclerView для стилей категории
+                val categoryRecyclerView = RecyclerView(this@changePhoto)
+                categoryRecyclerView.layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+                categoryRecyclerView.layoutManager = LinearLayoutManager(this@changePhoto, LinearLayoutManager.HORIZONTAL, false)
+                categoryRecyclerView.layoutParams = params
+
+                bind.linear.addView(categoryRecyclerView)
+
+                // Фильтруем стили по категории
+                val stylesForCategory = allModels[2].filter { it.category == category }
+
+                // Создаем адаптер и связываем его с RecyclerView
+                val styleAdapter = StyleAdapter(stylesForCategory)
+                categoryRecyclerView.adapter = styleAdapter
+
+                styleAdapter.setOnItemClickListener { prompt ->
+                    Log.i("PROMPT", prompt.toString())
+                    bind.generate.setOnClickListener {
+                        makeReq(prompt)
+                    }
+                }
+            }
+
+
+            //all styles END
         }
+
+
     }
-        }
-    }
+
+
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -117,6 +189,21 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
 
             if (selectedImageUri != null) {
                 // FACE DETECTOR
+                bind.select.isEnabled = false
+                bind.generate.isEnabled = false
+
+                Log.i("selectedImageUri", selectedImageUri.toString())
+
+                val imageSize = manage.getImageSize(this, selectedImageUri.toString())
+
+                if(imageSize != null){
+                    width = imageSize.first
+                    height = imageSize.second
+                }else{
+                    Log.i("ERROR SIZE IMAGE", "ERROR SIZE IMAGE")
+
+                }
+
                 val image: InputImage = InputImage.fromFilePath(this, selectedImageUri)
 
                 val faceDetector: FaceDetector = FaceDetection.getClient()
@@ -163,10 +250,13 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
                                         if (response.isSuccessful) {
                                             val responseBody = response.body?.string()
                                             Log.i("LOG", responseBody.toString())
-                                            val jsonObject = JSONObject(responseBody)
+                                            val jsonObject = JSONObject(responseBody!!)
 
                                             fileValue = jsonObject.getString("file")
                                             Log.i("LOG", fileValue.toString())
+                                            runOnUiThread {  bind.select.isEnabled = true
+                                                bind.generate.isEnabled = true
+                                            }
 
                                         } else {
                                             // Handle the response error here
@@ -181,7 +271,8 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
                     .addOnFailureListener { e ->
                         e.printStackTrace()
                     }
-               // FACE Detector END
+
+                // FACE Detector END
             }
         }
     }
@@ -291,6 +382,34 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
 
 
 
+fun makeReq(prompt: Model){
+    val reque =    """
+    {
+        "model_id": "${prompt.modelId}",
+        "controlModel": "${prompt.controlModel}",
+        "imagePath": "https://ucarecdn.com/${fileValue}/-/preview/768x${manage.resizeImage(width, height, 768)}/-/quality/smart/-/format/auto/",
+        "prompt": "${prompt.prompt}",
+        "negative_prompt": "${prompt.negativePrompt}",
+        "width": 768,
+        "strength" : ${prompt.strength},
+        "height": ${manage.resizeImage(width, height, 768)}, 
+        "seed": null,
+	  "lora_model": ${prompt.lora},
+	  "lora_strength": 1, 
+      "steps": ${prompt.steps}
+    }
+    """.trimIndent()
+    Log.i("reque", reque)
+    createImageWithRetry(
+        reque, "https://creator.aitubo.ai/api/job/create") { imageUrl ->
+        runOnUiThread {
+            Log.i("URL", imageUrl)
+            intent = Intent(this@changePhoto, Photo_Activity::class.java)
+            intent.putExtra("imageUrl", imageUrl)
+            startActivity(intent)
+        }
+    }
+}
 
 
 

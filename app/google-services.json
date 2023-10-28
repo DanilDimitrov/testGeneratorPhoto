@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "540672127481",
-    "project_id": "aispace-db207",
-    "storage_bucket": "aispace-db207.appspot.com"
+    "project_number": "155712490881",
+    "project_id": "reimageapp",
+    "storage_bucket": "reimageapp.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:540672127481:android:86ad35ce98db5939dd4d28",
+        "mobilesdk_app_id": "1:155712490881:android:16c30d82d78936b5dfec80",
         "android_client_info": {
           "package_name": "com.example.testgeneratorphoto"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBfrj47JhVHpOxRqFx1wd8OiBV3JZDTIVc"
+          "current_key": "AIzaSyBnNF9bhamWc_t3uysBqJSNdaZBNZL5Vms"
         }
       ],
       "services": {

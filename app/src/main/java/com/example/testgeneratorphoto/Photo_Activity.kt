@@ -11,12 +11,14 @@ import cz.msebera.android.httpclient.Header
 import java.io.File
 
 class Photo_Activity : AppCompatActivity() {
+    lateinit var bind: ActivityPhotoBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        lateinit var bind: ActivityPhotoBinding
 
         super.onCreate(savedInstanceState)
         bind = ActivityPhotoBinding.inflate(layoutInflater)
         setContentView(bind.root)
+
 
         val imageUrl = intent.getStringExtra("imageUrl")
         runOnUiThread {Picasso.get().load(imageUrl).into(bind.Photo) }

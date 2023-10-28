@@ -34,6 +34,8 @@
         android:id="@+id/selfi"
         android:layout_width="129dp"
         android:layout_height="56dp"
+        android:background="#000000"
+        android:backgroundTint="#AF9B9B"
         android:text="selfi"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

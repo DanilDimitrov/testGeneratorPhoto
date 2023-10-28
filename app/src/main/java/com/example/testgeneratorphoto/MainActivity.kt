@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import com.example.testgeneratorphoto.databinding.ActivityMainBinding
@@ -17,6 +18,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.github.kittinunf.fuel.Fuel
 import com.github.kittinunf.fuel.core.extensions.jsonBody
 import com.github.kittinunf.result.Result
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
@@ -33,12 +35,16 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         bind = ActivityMainBinding.inflate(layoutInflater)
         setContentView(bind.root)
+        // AUTH
         auth = Firebase.auth
+
+
+
         lifecycleScope.launch {
             val allModels = manage.getAllCollections()
             Log.i("allModels", allModels.toString())
 
-            val adapter = StyleAdapter(allModels)
+            val adapter = HeaderAdapter(allModels[0])
             bind.recyclerView?.layoutManager = GridLayoutManager(this@MainActivity, 2)
             bind.recyclerView?.adapter = adapter
 
@@ -54,16 +60,16 @@ class MainActivity : AppCompatActivity() {
                     Log.i("TEXT", translatedText)
                 val reque =    """
     {
-        "model_id": "${prompt.modelId.toString()}",
-        "prompt": "$translatedText  ${prompt.prompt.toString()}",
-        "negative_prompt": "${prompt.negativePrompt.toString()}",
+        "model_id": "${prompt.modelId}",
+        "prompt": "$translatedText  ${prompt.prompt}",
+        "negative_prompt": "${prompt.negativePrompt}",
         "width": "512",
         "height": "768", 
         "seed": null,
 	  "lora_model": ${prompt.lora},
 	  "lora_strength": 1
     }
-    """.trimIndent().toString()
+    """.trimIndent()
                 Log.i("reque", reque)
 
                     createImageWithRetry(
@@ -93,7 +99,9 @@ class MainActivity : AppCompatActivity() {
         super.onStart()
 
         val currentUser = auth.currentUser
+        signInAnonymously()
     }
+
 
     fun createImageWithRetry(json: String, apiUrl: String, callback: (String) -> Unit) {
 
@@ -192,5 +200,29 @@ class MainActivity : AppCompatActivity() {
 
         sendRequest()
     }
-
+    private fun signInAnonymously() {
+        // [START signin_anonymously]
+        auth.signInAnonymously()
+            .addOnCompleteListener(this) { task ->
+                if (task.isSuccessful) {
+                    // Sign in success, update UI with the signed-in user's information
+                    Log.d("TAG", "signInAnonymously:success")
+                    val user = auth.currentUser
+                    updateUI(user)
+                } else {
+                    // If sign in fails, display a message to the user.
+                    Log.w("TAG", "signInAnonymously:failure", task.exception)
+                    Toast.makeText(
+                        baseContext,
+                        "Authentication failed.",
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                    updateUI(null)
+                }
+            }
+        // [END signin_anonymously]
+    }
+    private fun updateUI(user: FirebaseUser?) {
+        Log.i("USER INFORMATION", user?.isAnonymous.toString())
+    }
 }

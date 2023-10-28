@@ -1,28 +1,20 @@
 package com.example.testgeneratorphoto
 
-import CategoryAdapter
 import Manage
 import StyleAdapter
 import android.content.Intent
-import android.content.res.Resources
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
-import android.view.ViewGroup
+import android.view.LayoutInflater
 import android.widget.ImageButton
-import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
-import androidx.core.view.marginStart
-import androidx.core.widget.NestedScrollView
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.testgeneratorphoto.databinding.ActivityChangePhotoBinding
@@ -132,38 +124,28 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
             //all styles
             for (category in categories) {
                 // Создаем заголовок категории
-                val categoryHeader = TextView(this@changePhoto)
-                val params = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                )
+                val itemView = LayoutInflater.from(this@changePhoto).inflate(R.layout.text_adapter, null)
+                val categoryHeader = itemView.findViewById<TextView>(R.id.categoryTextView)
+                val seeAllButton = itemView.findViewById<ImageButton>(R.id.imageButton)
+                val categoryRecyclerView = itemView.findViewById<RecyclerView>(R.id.categoryRecyclerView)
+
+                // Настройка текста и изображения
                 categoryHeader.text = category
-                categoryHeader.textSize = 17f
-                params.marginStart = (12 * Resources.getSystem().displayMetrics.density).toInt()
-                params.topMargin = (8 * Resources.getSystem().displayMetrics.density).toInt()
-                params.bottomMargin = (8 * Resources.getSystem().displayMetrics.density).toInt()
-
-                categoryHeader.setTextColor(ContextCompat.getColor(this@changePhoto, R.color.white))
-                categoryHeader.layoutParams = params
-                bind.linear.addView(categoryHeader)
-
-                // Создаем RecyclerView для стилей категории
-                val categoryRecyclerView = RecyclerView(this@changePhoto)
-                categoryRecyclerView.layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
                 categoryRecyclerView.layoutManager = LinearLayoutManager(this@changePhoto, LinearLayoutManager.HORIZONTAL, false)
-                categoryRecyclerView.layoutParams = params
 
-                bind.linear.addView(categoryRecyclerView)
+                bind.linear.addView(itemView)
 
                 // Фильтруем стили по категории
                 val stylesForCategory = allModels[2].filter { it.category == category }
 
                 // Создаем адаптер и связываем его с RecyclerView
-                val styleAdapter = StyleAdapter(stylesForCategory)
+                val styleAdapter = StyleAdapter(stylesForCategory, category)
                 categoryRecyclerView.adapter = styleAdapter
+
+                seeAllButton.setOnClickListener {
+                    val allStylesInCategory = allModels[2].filter { it.category == category }
+                   Log.i("allStylesInCategory", allStylesInCategory.toString())
+                }
 
                 styleAdapter.setOnItemClickListener { prompt ->
                     Log.i("PROMPT", prompt.toString())

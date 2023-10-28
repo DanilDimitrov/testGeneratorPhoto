@@ -9,7 +9,7 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.example.testgeneratorphoto.Model
 import com.example.testgeneratorphoto.R
 
-class StyleAdapter(var styles: List<Model>) :
+class StyleAdapter(var styles: List<Model>, private var category: String) :
     RecyclerView.Adapter<StyleAdapter.ViewHolder>() {
     private var onItemClick: ((Model) -> Unit)? = null
 
@@ -39,6 +39,9 @@ class StyleAdapter(var styles: List<Model>) :
             .load(style.preview.toString())
             .diskCacheStrategy(DiskCacheStrategy.DATA)
             .into(holder.styleImageView)
+
+        // Установите категорию для элемента
+       style.category = category
     }
 
     fun setOnItemClickListener(listener: (Model) -> Unit) {

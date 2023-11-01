@@ -27,6 +27,15 @@
         android:theme="@style/Theme.TestGeneratorPhoto"
         tools:targetApi="33">
         <activity
+            android:name=".choseColor"
+            android:exported="false" />
+        <activity
+            android:name=".choseStyle"
+            android:exported="false" />
+        <activity
+            android:name=".seeAllStyles"
+            android:exported="false" />
+        <activity
             android:name=".Photo_Activity"
             android:exported="false" />
         <activity

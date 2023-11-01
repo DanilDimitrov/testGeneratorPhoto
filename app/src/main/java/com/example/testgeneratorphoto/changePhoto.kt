@@ -10,6 +10,8 @@ import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.View
+import android.view.animation.AnimationUtils
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
@@ -21,6 +23,7 @@ import com.example.testgeneratorphoto.databinding.ActivityChangePhotoBinding
 import com.github.kittinunf.fuel.Fuel
 import com.github.kittinunf.fuel.core.extensions.jsonBody
 import com.github.kittinunf.result.Result
+import com.google.gson.Gson
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
@@ -52,6 +55,11 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
     val uiIntarface = UIIntreface()
     var width: Int = 0
     var height: Int = 0
+    val chosePhoto = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+    lateinit var promptModel : List<Model>
+    lateinit var modelsInCategory: List<Model>
+    lateinit var categoryName: String
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,20 +68,19 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
 
         bind = ActivityChangePhotoBinding.inflate(layoutInflater)
         setContentView(bind.root)
+
+        val animation = AnimationUtils.loadAnimation(this, R.anim.slide_up)
+        findViewById<View>(R.id.changePhoto).startAnimation(animation)
         // UI
         bind.textApp.paint.shader = uiIntarface.textApp(bind.textApp)
 
         // UI CLOSE
 
-        bind.photo.setOnClickListener {
-            val goToPhoto = Intent(this, MainActivity::class.java)
-            startActivity(goToPhoto)
-        }
-
-        bind.select.setOnClickListener{
-            val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-            startActivityForResult(intent, REQUEST_IMAGE_PICK)
-        }
+bind.aiArt.setOnClickListener {
+    val i = Intent(this, MainActivity::class.java)
+    startActivity(i)
+    finish()
+}
 
         lifecycleScope.launch {
             val allModels = manage.getAllCollections()
@@ -99,10 +106,13 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
 
             headerAdapter.setOnItemClickListener { prompt ->
                 Log.i("PROMPT", prompt.toString())
+                categoryName  = prompt.category
+                modelsInCategory = allModels[0].filter { it.category == categoryName }
+                startActivityForResult(chosePhoto, REQUEST_IMAGE_PICK)
+                promptModel = listOf(prompt)
+                Log.i("promptModel", promptModel.toString())
 
-                bind.generate.setOnClickListener {
-                    makeReq(prompt)
-                }
+
             }
             // Header adapter END
 
@@ -114,10 +124,11 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
 
             popularAdapter.setOnItemClickListener { prompt ->
                 Log.i("PROMPT", prompt.toString())
-
-                bind.generate.setOnClickListener {
-                    makeReq(prompt)
-                }
+                categoryName  = prompt.category
+                modelsInCategory = allModels[1].filter { it.category == categoryName }
+                startActivityForResult(chosePhoto, REQUEST_IMAGE_PICK)
+                promptModel = listOf(prompt)
+                Log.i("promptModel", promptModel.toString())
             }
             // Popular adapter END
 
@@ -144,25 +155,31 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
 
                 seeAllButton.setOnClickListener {
                     val allStylesInCategory = allModels[2].filter { it.category == category }
-                   Log.i("allStylesInCategory", allStylesInCategory.toString())
+
+                    val gson = Gson()
+                    val allStylesJson = gson.toJson(allStylesInCategory)
+
+                    val seeAllIntent = Intent(this@changePhoto, seeAllStyles::class.java)
+
+                    seeAllIntent.putExtra("allStylesInCategory", allStylesJson)
+                    Log.i("allStylesJson", allStylesJson.toString())
+                    startActivity(seeAllIntent)
                 }
 
                 styleAdapter.setOnItemClickListener { prompt ->
                     Log.i("PROMPT", prompt.toString())
-                    bind.generate.setOnClickListener {
-                        makeReq(prompt)
-                    }
+                    categoryName  = prompt.category
+                    modelsInCategory = allModels[2].filter { it.category == categoryName }
+
+                    startActivityForResult(chosePhoto, REQUEST_IMAGE_PICK)
+                    promptModel = listOf(prompt)
+                    Log.i("promptModel", promptModel.toString())
+
                 }
             }
-
-
             //all styles END
         }
-
-
     }
-
-
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -171,9 +188,6 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
 
             if (selectedImageUri != null) {
                 // FACE DETECTOR
-                bind.select.isEnabled = false
-                bind.generate.isEnabled = false
-
                 Log.i("selectedImageUri", selectedImageUri.toString())
 
                 val imageSize = manage.getImageSize(this, selectedImageUri.toString())
@@ -193,61 +207,26 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
                 faceDetector.process(image)
                     .addOnSuccessListener { faces ->
                         if (faces.isNotEmpty()) {
-                            Log.i("FACE DETECTION", "FACE YES")
-                            runOnUiThread { bind.imageView2.setImageURI(selectedImageUri) }
-                            val projection = arrayOf(MediaStore.Images.Media.DATA)
-                            val cursor = contentResolver.query(selectedImageUri, projection, null, null, null)
+                            val choseStyleIntent = Intent(this@changePhoto, choseStyle::class.java)
 
-                            cursor?.use {
-                                val columnIndex = it.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
-                                it.moveToFirst()
-                                val filePath = it.getString(columnIndex)
-                                val file = File(filePath)
+                            val gson = Gson()
+                            val styleForChose = gson.toJson(promptModel)
+                            val modelsJson = gson.toJson(modelsInCategory)
 
-                                val apiKey = "8e5546827ea347b7479c"
-                                val uploadUrl = "https://upload.uploadcare.com/base/"
-                                val client = OkHttpClient()
-                                val requestBody = MultipartBody.Builder()
-                                    .setType(MultipartBody.FORM)
-                                    .addFormDataPart("UPLOADCARE_PUB_KEY", apiKey)
-                                    .addFormDataPart("UPLOADCARE_STORE", "auto")
-                                    .addFormDataPart(
-                                        "file",
-                                        file.name,
-                                        file.asRequestBody("image/*".toMediaTypeOrNull())
-                                    )
-                                    .build()
+                            choseStyleIntent.putExtra("styleForChose", styleForChose)
+                            Log.i("styleForChose", styleForChose.toString())
+                            choseStyleIntent.putExtra("selectedImageUri", selectedImageUri.toString())
+                            Log.i("selectedImageUri", selectedImageUri.toString())
+                            choseStyleIntent.putExtra("modelsInCategory", modelsJson)
 
-                                val request = Request.Builder()
-                                    .url(uploadUrl)
-                                    .post(requestBody)
-                                    .build()
 
-                                client.newCall(request).enqueue(object : Callback {
-                                    override fun onFailure(call: Call, e: IOException) {
-                                        Log.e("NetworkError", e.message ?: "Unknown error")
-                                    }
 
-                                    override fun onResponse(call: Call, response: Response) {
-                                        if (response.isSuccessful) {
-                                            val responseBody = response.body?.string()
-                                            Log.i("LOG", responseBody.toString())
-                                            val jsonObject = JSONObject(responseBody!!)
+                            startActivity(choseStyleIntent)
 
-                                            fileValue = jsonObject.getString("file")
-                                            Log.i("LOG", fileValue.toString())
-                                            runOnUiThread {  bind.select.isEnabled = true
-                                                bind.generate.isEnabled = true
-                                            }
-
-                                        } else {
-                                            // Handle the response error here
-                                        }
-                                    }
-                                })
-                            }
                         } else {
                             Toast.makeText(this, "Change photo", Toast.LENGTH_SHORT).show()
+                            startActivityForResult(chosePhoto, REQUEST_IMAGE_PICK)
+
                         }
                     }
                     .addOnFailureListener { e ->

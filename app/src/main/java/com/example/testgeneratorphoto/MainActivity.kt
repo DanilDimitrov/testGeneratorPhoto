@@ -92,6 +92,7 @@ class MainActivity : AppCompatActivity() {
         bind.selfi?.setOnClickListener {
             val intent = Intent(this@MainActivity, changePhoto::class.java)
             startActivity(intent)
+            finish()
 
         }
     }

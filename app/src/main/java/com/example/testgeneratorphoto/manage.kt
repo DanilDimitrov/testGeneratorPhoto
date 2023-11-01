@@ -1,6 +1,8 @@
+import android.app.Activity
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.provider.MediaStore
 import android.util.Log
 import com.example.testgeneratorphoto.Model
 import com.example.testgeneratorphoto.R
@@ -10,7 +12,10 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.asRequestBody
 import org.json.JSONObject
+import java.io.File
+import java.io.IOException
 
 class Manage {
     suspend fun translator(inputText: String, fromLang: String): String = withContext(Dispatchers.IO) {
@@ -132,6 +137,56 @@ Log.i("ARRAYS", allModels.toString())
         }
         return null
     }
+
+    fun Activity.uploadFileToUploadcare(selectedImageUri: Uri, apiKey: String, onUploadComplete: (fileValue: String) -> Unit) {
+        val projection = arrayOf(MediaStore.Images.Media.DATA)
+        val cursor = contentResolver.query(selectedImageUri, projection, null, null, null)
+
+        cursor?.use {
+            val columnIndex = it.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+            it.moveToFirst()
+            val filePath = it.getString(columnIndex)
+            val file = File(filePath)
+
+            val uploadUrl = "https://upload.uploadcare.com/base/"
+            val client = OkHttpClient()
+            val requestBody = MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("UPLOADCARE_PUB_KEY", apiKey)
+                .addFormDataPart("UPLOADCARE_STORE", "auto")
+                .addFormDataPart(
+                    "file",
+                    file.name,
+                    file.asRequestBody("image/*".toMediaTypeOrNull())
+                )
+                .build()
+
+            val request = Request.Builder()
+                .url(uploadUrl)
+                .post(requestBody)
+                .build()
+
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    // Handle the failure here
+                    e.printStackTrace()
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    if (response.isSuccessful) {
+                        val responseBody = response.body?.string()
+                        val jsonObject = JSONObject(responseBody!!)
+                        val fileValue = jsonObject.getString("file")
+
+                        onUploadComplete(fileValue)
+                    } else {
+                        // Handle the response error here
+                    }
+                }
+            })
+        }
+    }
+
 
 
 }

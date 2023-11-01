@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Определите пользовательский стиль для BottomNavigationView -->
+    <style name="AppBottomNavigationStyle" parent="Widget.Design.BottomNavigationView">
+        <item name="android:background">?android:attr/selectableItemBackgroundBorderless</item>
+        <item name="android:foreground">?android:attr/selectableItemBackground</item>
+        <item name="android:theme">@style/NoAnimationBottomNavigation</item>
+    </style>
+
+    <!-- Определите стиль без анимации -->
+    <style name="NoAnimationBottomNavigation">
+        <item name="android:background">?android:attr/selectableItemBackgroundBorderless</item>
+        <item name="android:foreground">?android:attr/selectableItemBackground</item>
+    </style>
+
+</resources>

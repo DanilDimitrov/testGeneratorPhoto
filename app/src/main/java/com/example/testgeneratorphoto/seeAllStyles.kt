@@ -67,8 +67,6 @@ class seeAllStyles : AppCompatActivity() {
             startActivityForResult(chosePhoto, 1)
             promptModel = listOf(prompt)
             Log.i("promptModel", promptModel.toString())
-
-
         }
 
         bind.backFromAllStyle.setOnClickListener{
@@ -82,13 +80,13 @@ class seeAllStyles : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 1 && resultCode == RESULT_OK && data != null) {
-            selectedImageUri = data.data!!
+            val selectedImageUri: Uri? = data.data
 
             if (selectedImageUri != null) {
                 // FACE DETECTOR
                 Log.i("selectedImageUri", selectedImageUri.toString())
 
-                val imageSize = manage.getImageSize(this, selectedImageUri.toString())
+                val imageSize = manage.getImageSize(this, selectedImageUri)
 
                 if(imageSize != null){
                     width = imageSize.first
@@ -113,12 +111,13 @@ class seeAllStyles : AppCompatActivity() {
 
                             choseStyleIntent.putExtra("styleForChose", styleForChose)
                             Log.i("styleForChose", styleForChose.toString())
-                            choseStyleIntent.putExtra("selectedImageUri", selectedImageUri.toString())
+                            choseStyleIntent.putExtra("selectedImageUri", selectedImageUri)
                             Log.i("selectedImageUri", selectedImageUri.toString())
                             choseStyleIntent.putExtra("modelsInCategory", modelsJson)
 
+
+
                             startActivity(choseStyleIntent)
-                            finish()
 
                         } else {
                             Toast.makeText(this, "Change photo", Toast.LENGTH_SHORT).show()
@@ -131,45 +130,6 @@ class seeAllStyles : AppCompatActivity() {
                     }
 
                 // FACE Detector END
-            }
-        }
-        else if (requestCode == 2 && resultCode == RESULT_OK && data != null) {
-
-
-            selectedImageUri = data.data!!
-
-            if (selectedImageUri != null) {
-                // FACE DETECTOR
-                Log.i("selectedImageUri", selectedImageUri.toString())
-
-                val imageSize = manage.getImageSize(this, selectedImageUri.toString())
-
-                if(imageSize != null){
-                    width = imageSize.first
-                    height = imageSize.second
-                }else{
-                    Log.i("ERROR SIZE IMAGE", "ERROR SIZE IMAGE")
-
-                }
-
-                val image: InputImage = InputImage.fromFilePath(this, selectedImageUri)
-
-                val faceDetector: FaceDetector = FaceDetection.getClient()
-
-                faceDetector.process(image)
-                    .addOnSuccessListener { faces ->
-                        if (faces.isNotEmpty()) {
-                            Log.i("selectedImageUri", selectedImageUri.toString())
-                        }
-                        else {
-                            Toast.makeText(this, "Change photo", Toast.LENGTH_SHORT).show()
-                            startActivityForResult(chosePhoto, 1)
-
-                        }
-                    }
-                    .addOnFailureListener { e ->
-                        e.printStackTrace()
-                    }
             }
         }
     }

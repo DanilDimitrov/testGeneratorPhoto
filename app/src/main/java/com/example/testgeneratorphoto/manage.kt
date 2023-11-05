@@ -1,13 +1,24 @@
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
+import androidx.core.content.ContextCompat.startActivity
 import com.example.testgeneratorphoto.Model
+import com.example.testgeneratorphoto.Photo_Activity
 import com.example.testgeneratorphoto.R
+import com.github.kittinunf.fuel.Fuel
+import com.github.kittinunf.fuel.core.extensions.jsonBody
+import com.github.kittinunf.result.Result
 import com.google.firebase.firestore.FirebaseFirestore
+import com.uploadcare.android.library.api.UploadcareClient
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import okhttp3.*
@@ -17,7 +28,13 @@ import org.json.JSONObject
 import java.io.File
 import java.io.IOException
 
+
 class Manage {
+    val uploadcare = UploadcareClient("8e5546827ea347b7479c", "9a60e9e2427b72234e5d")
+    var width: Int = 0
+    var height: Int = 0
+    val handler = Handler(Looper.getMainLooper())
+    val apiKey = "Bearer api-f1c9b6f96dce11eea95ce67244d2bd83"
     suspend fun translator(inputText: String, fromLang: String): String = withContext(Dispatchers.IO) {
         val client = OkHttpClient()
 
@@ -53,6 +70,8 @@ class Manage {
         }
     }
     // Определяем функцию-колбэк для передачи данных
+
+
 
     suspend fun getAllCollections(): ArrayList<ArrayList<Model>> = withContext(Dispatchers.IO) {
         val allModels = ArrayList<ArrayList<Model>>()
@@ -119,10 +138,9 @@ Log.i("ARRAYS", allModels.toString())
         return 0 // Вернуть значение по умолчанию или другое значение, если width == 0
     }
 
-    fun getImageSize(context: Context, imagePath: String): Pair<Int, Int>? {
+    fun getImageSize(context: Context, imagePath: Uri): Pair<Int, Int>? {
         try {
-            val uri = Uri.parse(imagePath)
-            val inputStream = context.contentResolver.openInputStream(uri)
+            val inputStream = context.contentResolver.openInputStream(imagePath)
             if (inputStream != null) {
                 val options = BitmapFactory.Options()
                 options.inJustDecodeBounds = true
@@ -136,55 +154,6 @@ Log.i("ARRAYS", allModels.toString())
             e.printStackTrace()
         }
         return null
-    }
-
-    fun Activity.uploadFileToUploadcare(selectedImageUri: Uri, apiKey: String, onUploadComplete: (fileValue: String) -> Unit) {
-        val projection = arrayOf(MediaStore.Images.Media.DATA)
-        val cursor = contentResolver.query(selectedImageUri, projection, null, null, null)
-
-        cursor?.use {
-            val columnIndex = it.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
-            it.moveToFirst()
-            val filePath = it.getString(columnIndex)
-            val file = File(filePath)
-
-            val uploadUrl = "https://upload.uploadcare.com/base/"
-            val client = OkHttpClient()
-            val requestBody = MultipartBody.Builder()
-                .setType(MultipartBody.FORM)
-                .addFormDataPart("UPLOADCARE_PUB_KEY", apiKey)
-                .addFormDataPart("UPLOADCARE_STORE", "auto")
-                .addFormDataPart(
-                    "file",
-                    file.name,
-                    file.asRequestBody("image/*".toMediaTypeOrNull())
-                )
-                .build()
-
-            val request = Request.Builder()
-                .url(uploadUrl)
-                .post(requestBody)
-                .build()
-
-            client.newCall(request).enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) {
-                    // Handle the failure here
-                    e.printStackTrace()
-                }
-
-                override fun onResponse(call: Call, response: Response) {
-                    if (response.isSuccessful) {
-                        val responseBody = response.body?.string()
-                        val jsonObject = JSONObject(responseBody!!)
-                        val fileValue = jsonObject.getString("file")
-
-                        onUploadComplete(fileValue)
-                    } else {
-                        // Handle the response error here
-                    }
-                }
-            })
-        }
     }
 
 

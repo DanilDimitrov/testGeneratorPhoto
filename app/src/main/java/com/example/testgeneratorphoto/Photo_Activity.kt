@@ -1,8 +1,10 @@
 package com.example.testgeneratorphoto
+import android.content.Intent
 import com.example.testgeneratorphoto.databinding.ActivityPhotoBinding
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
+import android.view.View
 import android.widget.Toast
 import com.loopj.android.http.AsyncHttpClient
 import com.loopj.android.http.FileAsyncHttpResponseHandler
@@ -21,7 +23,7 @@ class Photo_Activity : AppCompatActivity() {
 
 
         val imageUrl = intent.getStringExtra("imageUrl")
-        runOnUiThread {Picasso.get().load(imageUrl).into(bind.Photo) }
+        runOnUiThread {Picasso.get().load(imageUrl).into(bind.Photo)}
 
         bind.Download.setOnClickListener{
 
@@ -39,6 +41,24 @@ class Photo_Activity : AppCompatActivity() {
                     Toast.makeText(this@Photo_Activity, "Image downloaded and saved!", Toast.LENGTH_SHORT).show()
                 }
             })
+        }
+
+        bind.switch2.setOnCheckedChangeListener { buttonView, isChecked ->
+            // В этом обработчике вы можете реагировать на изменение состояния кнопки
+            if (isChecked) {
+                // Кнопка включена, выполняйте необходимые действия
+            } else {
+                // Кнопка выключена, выполняйте необходимые действия
+            }
+        }
+
+        bind.more.setOnClickListener {bind.moreImage.visibility = View.VISIBLE
+        }
+        bind.cancel.setOnClickListener { bind.moreImage.visibility = View.INVISIBLE }
+        bind.goToHome.setOnClickListener {
+            val goHomeIntent = Intent(this, changePhoto::class.java)
+            startActivity(goHomeIntent)
+            finish()
         }
     }
 }

@@ -48,9 +48,7 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
     lateinit var bind: ActivityChangePhotoBinding
     private val REQUEST_IMAGE_PICK = 1
      var fileValue: String = ""
-    val apiKey = "Bearer api-f1c9b6f96dce11eea95ce67244d2bd83"
-    val handler = Handler(Looper.getMainLooper())
-    val uploadcare = UploadcareClient("8e5546827ea347b7479c", "9a60e9e2427b72234e5d")
+
     val manage = Manage()
     val uiIntarface = UIIntreface()
     var width: Int = 0
@@ -190,7 +188,7 @@ bind.aiArt.setOnClickListener {
                 // FACE DETECTOR
                 Log.i("selectedImageUri", selectedImageUri.toString())
 
-                val imageSize = manage.getImageSize(this, selectedImageUri.toString())
+                val imageSize = manage.getImageSize(this, selectedImageUri)
 
                 if(imageSize != null){
                     width = imageSize.first
@@ -215,7 +213,7 @@ bind.aiArt.setOnClickListener {
 
                             choseStyleIntent.putExtra("styleForChose", styleForChose)
                             Log.i("styleForChose", styleForChose.toString())
-                            choseStyleIntent.putExtra("selectedImageUri", selectedImageUri.toString())
+                            choseStyleIntent.putExtra("selectedImageUri", selectedImageUri)
                             Log.i("selectedImageUri", selectedImageUri.toString())
                             choseStyleIntent.putExtra("modelsInCategory", modelsJson)
 
@@ -238,139 +236,11 @@ bind.aiArt.setOnClickListener {
         }
     }
 
-    fun createImageWithRetry(json: String, apiUrl: String, callback: (String) -> Unit) {
-        fun checkStatus(id: String) {
-            Fuel.get("https://creator.aitubo.ai/api/job/get?id=$id")
-                .timeout(20000)
-                .response { _, _, result ->
-                    when (result) {
-                        is Result.Failure -> {
-                            val e = result.error.exception
-                            Log.e("error", "API FAILED", e)
-                            handler.postDelayed({ checkStatus(id) }, 3000)
-                        }
-
-                        is Result.Success -> {
-                            val body = String(result.value)
-                            val jsonObject = JSONObject(body)
-                            val status = jsonObject.optInt("status")
-                            Log.i("STATUS", status.toString())
-
-                            Log.i("RESULT", jsonObject.toString())
-                            when (status) {
-                                0 -> {
-                                    val data = jsonObject.optJSONObject("data")
-                                    val resultObject = data?.optJSONObject("result")
-                                    val dataObject = resultObject?.optJSONObject("data")
-                                    val imagesArray = dataObject?.optJSONArray("images")
-                                    Log.i("imgs", imagesArray.toString())
-                                    Log.i("dataObject", dataObject.toString())
-
-                                    if (imagesArray != null && imagesArray.length() > 0) {
-                                        val firstImageUrl = imagesArray.getString(0)
-                                        Log.i("First IMAGE URL", firstImageUrl)
-                                        GlobalScope.launch(Dispatchers.IO) {
-                                            uploadcare.deleteFile(fileValue.toString())
-
-                                        }
-                                        callback("https://file.aitubo.ai/${firstImageUrl.toString()}")
 
 
 
-                                    } else {
-                                        handler.postDelayed({ checkStatus(id) }, 2000)
-                                    }
-                                }
-
-                                1 -> {
-                                    handler.postDelayed({ checkStatus(id) }, 3000)
-                                    Log.i("Process", status.toString())
-                                }
-
-                                else -> {
-                                    handler.postDelayed({ checkStatus(id) }, 3000)
-                                }
-                            }
-                        }
-                    }
-                }
-        }
-
-        fun sendRequest() {
-            Fuel.post(apiUrl)
-                .header("Content-Type" to "application/json")
-                .header("Authorization" to apiKey)
-                .timeout(30000)
-                .jsonBody(json)
-                .response { _, response, result ->
-                    when (result) {
-                        is Result.Failure -> {
-                            val e = result.error.exception
-                            Log.e("error", "API FAILED", e)
-                            handler.postDelayed({ sendRequest() }, 3000)
-                        }
-
-                        is Result.Success -> {
-                            val body = String(response.data)
-
-                            val jsonObject = JSONObject(body)
-                            val code = jsonObject.optString("code")
-                            Log.i("id", jsonObject.toString())
-                            when (code) {
-                                "0" -> {
-                                    val dataObject = jsonObject.optJSONObject("data")
-                                    val id = dataObject?.optString("id")
-                                    Log.i("data", dataObject!!.toString())
-                                    Log.i("id", id.toString())
-                                    if (id != null) {
-                                        Log.i("LOG", "Checking status for ID: $id")
-                                        checkStatus(id)
-                                    }
-
-                                }
-                                else -> {
-                                    Log.e("ERROR", "Error $code")
-                                }
-                            }
-                        }
-                    }
-                }
-        }
-        Log.i("LOG", "Sending request...")
-
-        sendRequest()
-    }
 
 
-
-fun makeReq(prompt: Model){
-    val reque =    """
-    {
-        "model_id": "${prompt.modelId}",
-        "controlModel": "${prompt.controlModel}",
-        "imagePath": "https://ucarecdn.com/${fileValue}/-/preview/768x${manage.resizeImage(width, height, 768)}/-/quality/smart/-/format/auto/",
-        "prompt": "${prompt.prompt}",
-        "negative_prompt": "${prompt.negativePrompt}",
-        "width": 768,
-        "strength" : ${prompt.strength},
-        "height": ${manage.resizeImage(width, height, 768)}, 
-        "seed": null,
-	  "lora_model": ${prompt.lora},
-	  "lora_strength": 1, 
-      "steps": ${prompt.steps}
-    }
-    """.trimIndent()
-    Log.i("reque", reque)
-    createImageWithRetry(
-        reque, "https://creator.aitubo.ai/api/job/create") { imageUrl ->
-        runOnUiThread {
-            Log.i("URL", imageUrl)
-            intent = Intent(this@changePhoto, Photo_Activity::class.java)
-            intent.putExtra("imageUrl", imageUrl)
-            startActivity(intent)
-        }
-    }
-}
 
 
 

@@ -2,14 +2,20 @@ package com.example.testgeneratorphoto
 
 import Manage
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Environment
 import android.provider.MediaStore
+import android.provider.Settings
 import android.util.Log
 import android.view.View
 import android.view.animation.AnimationUtils
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -36,11 +42,12 @@ class choseStyle : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(bind.root)
 
+        promptModel = listOf()
         val animation = AnimationUtils.loadAnimation(this, R.anim.slide_up)
         findViewById<View>(R.id.choseStyle).startAnimation(animation)
 
         val allStylesJson = intent.getStringExtra("styleForChose")
-        val inputImage = intent.getStringExtra("selectedImageUri")
+        selectedImageUri = intent.getParcelableExtra<Uri>("selectedImageUri")!!
         val modelsInCategoryJson = intent.getStringExtra("modelsInCategory")
 
 
@@ -52,7 +59,7 @@ class choseStyle : AppCompatActivity() {
         modelsInCategory = gson.fromJson<List<Model>>(modelsInCategoryJson, type)
 
         Log.i("styleForChose", allStylesInCategory.toString())
-        Log.i("selectedImageUri", inputImage.toString())
+        Log.i("selectedImageUri", selectedImageUri.toString())
         Log.i("modelsInCategory", modelsInCategory.toString())
 
 
@@ -80,12 +87,20 @@ class choseStyle : AppCompatActivity() {
         }
 
         bind.cross.setOnClickListener {
-            startActivityForResult(chosePhoto, 2)
-        }
-
-        bind.done.setOnClickListener {
             val toMain = Intent(this, changePhoto::class.java)
             startActivity(toMain)
+            finish()
+
+
+        }
+
+        bind.tryStyleNow.setOnClickListener{
+            val tryStyle = Intent(this, choseColor::class.java)
+            tryStyle.putExtra("promptModel", allStylesJson)
+            tryStyle.putExtra("selectedImageUri", selectedImageUri)
+
+            Log.i("inputImage", selectedImageUri.toString())
+            startActivity(tryStyle)
             finish()
         }
     }
@@ -93,14 +108,16 @@ class choseStyle : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == 1 && resultCode == RESULT_OK && data != null) {
+        if (resultCode == RESULT_OK && data != null) {
+            if (requestCode == 1) {
+
              selectedImageUri = data.data!!
 
             if (selectedImageUri != null) {
                 // FACE DETECTOR
                 Log.i("selectedImageUri", selectedImageUri.toString())
 
-                val imageSize = manage.getImageSize(this, selectedImageUri.toString())
+                val imageSize = manage.getImageSize(this, selectedImageUri)
 
                 if(imageSize != null){
                     width = imageSize.first
@@ -122,15 +139,14 @@ class choseStyle : AppCompatActivity() {
                             val gson = Gson()
                             val styleForChose = gson.toJson(promptModel)
                             val modelsJson = gson.toJson(modelsInCategory)
-
                             choseStyleIntent.putExtra("styleForChose", styleForChose)
                             Log.i("styleForChose", styleForChose.toString())
-                            choseStyleIntent.putExtra("selectedImageUri", selectedImageUri.toString())
+                            choseStyleIntent.putExtra("selectedImageUri", selectedImageUri)
+
                             Log.i("selectedImageUri", selectedImageUri.toString())
                             choseStyleIntent.putExtra("modelsInCategory", modelsJson)
 
                             startActivity(choseStyleIntent)
-                            finish()
 
                         } else {
                             Toast.makeText(this, "Change photo", Toast.LENGTH_SHORT).show()
@@ -145,44 +161,47 @@ class choseStyle : AppCompatActivity() {
                 // FACE Detector END
             }
         }
-        else if (requestCode == 2 && resultCode == RESULT_OK && data != null) {
+        else if (requestCode == 2){
 
 
-            selectedImageUri = data.data!!
+                if (data != null) {
+            val newImageUri = data.data
 
-            if (selectedImageUri != null) {
-                // FACE DETECTOR
-                Log.i("selectedImageUri", selectedImageUri.toString())
+            // FACE DETECTOR
+            Log.i("selectedImageUri", newImageUri.toString())
 
-                val imageSize = manage.getImageSize(this, selectedImageUri.toString())
+            val imageSize = manage.getImageSize(this, newImageUri!!)
 
-                if(imageSize != null){
-                    width = imageSize.first
-                    height = imageSize.second
-                }else{
-                    Log.i("ERROR SIZE IMAGE", "ERROR SIZE IMAGE")
+            if(imageSize != null){
+                width = imageSize.first
+                height = imageSize.second
+            }else{
+                Log.i("ERROR SIZE IMAGE", "ERROR SIZE IMAGE")
 
-                }
-
-                val image: InputImage = InputImage.fromFilePath(this, selectedImageUri)
-
-                val faceDetector: FaceDetector = FaceDetection.getClient()
-
-                faceDetector.process(image)
-                    .addOnSuccessListener { faces ->
-                        if (faces.isNotEmpty()) {
-                            Log.i("selectedImageUri", selectedImageUri.toString())
-                        }
-                        else {
-                    Toast.makeText(this, "Change photo", Toast.LENGTH_SHORT).show()
-                    startActivityForResult(chosePhoto, 1)
-
-                     }
-                }
-                .addOnFailureListener { e ->
-                    e.printStackTrace()
-                }
             }
+
+            val image: InputImage = InputImage.fromFilePath(this, newImageUri)
+
+            val faceDetector: FaceDetector = FaceDetection.getClient()
+
+            faceDetector.process(image)
+                .addOnSuccessListener { faces ->
+                    if (faces.isNotEmpty()) {
+                        selectedImageUri = newImageUri
+                        Log.i("selectedImageUri", selectedImageUri.toString())
+                        Toast.makeText(this, "Photo Changed successful", Toast.LENGTH_SHORT).show()
+
+                    }
+                    else {
+                Toast.makeText(this, "Change photo", Toast.LENGTH_SHORT).show()
+                startActivityForResult(chosePhoto, 1)
+
+                 }
+            }
+            .addOnFailureListener { e ->
+                e.printStackTrace()
+            }
+        }}
         }
     }
 }

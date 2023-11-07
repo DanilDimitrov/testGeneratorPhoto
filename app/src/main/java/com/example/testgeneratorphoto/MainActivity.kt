@@ -1,7 +1,6 @@
 package com.example.testgeneratorphoto
 
 import Manage
-import android.annotation.SuppressLint
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -10,7 +9,7 @@ import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.testgeneratorphoto.databinding.ActivityMainBinding
 import org.json.JSONObject
 import com.google.firebase.auth.FirebaseAuth
@@ -27,10 +26,9 @@ class MainActivity : AppCompatActivity() {
     lateinit var bind: ActivityMainBinding
     val manage = Manage()
     private lateinit var auth: FirebaseAuth
+    val uiIntarface = UIIntreface()
 
 
-
-    @SuppressLint("SuspiciousIndentation")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         bind = ActivityMainBinding.inflate(layoutInflater)
@@ -38,57 +36,27 @@ class MainActivity : AppCompatActivity() {
         // AUTH
         auth = Firebase.auth
 
-
-
+        // UI
+        bind.textApp3?.paint?.shader = uiIntarface.textApp(bind.textApp3!!)
         lifecycleScope.launch {
-            val allModels = manage.getAllCollections()
-            Log.i("allModels", allModels.toString())
+            val artModelsArray = manage.getArtModels()
+            val artModels = artModelsArray[0]
+            Log.i("artModels", artModels.toString())
 
-            val adapter = HeaderAdapter(allModels[0])
-            bind.recyclerView?.layoutManager = GridLayoutManager(this@MainActivity, 2)
-            bind.recyclerView?.adapter = adapter
+            val artAdapter = artStyleAdapter(artModels)
+            val artStyleLayoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
+            bind.artStyleRecycler?.adapter = artAdapter
+            bind.artStyleRecycler?.layoutManager = artStyleLayoutManager
 
-            adapter.setOnItemClickListener { prompt ->
-                // Здесь можно выполнить действия с промптом
+            artAdapter.setOnItemClickListener { prompt ->
                 Log.i("PROMPT", prompt.toString())
-
-
-        bind.generate.setOnClickListener {
-            val inputText = bind.prompt.text.toString()
-            lifecycleScope.launch {
-                val translatedText = manage.translator(inputText, "uk")
-                    Log.i("TEXT", translatedText)
-                val reque =    """
-    {
-        "model_id": "${prompt.modelId}",
-        "prompt": "$translatedText  ${prompt.prompt}",
-        "negative_prompt": "${prompt.negativePrompt}",
-        "width": "512",
-        "height": "768", 
-        "seed": null,
-	  "lora_model": ${prompt.lora},
-	  "lora_strength": 1
-    }
-    """.trimIndent()
-                Log.i("reque", reque)
-
-                    createImageWithRetry(
-                        reque, "https://api.midjourneyapi.xyz/sd/txt2img"
-                    ) { imageUrl ->
-                        runOnUiThread {
-                            Log.i("URL", imageUrl)
-                            intent = Intent(this@MainActivity, Photo_Activity::class.java)
-                            intent.putExtra("imageUrl", imageUrl)
-                            startActivity(intent)
-                            //Picasso.get().load(imageUrl).into(bind.imageView)
-                        }
-                    }
-                }
             }
 
-
-            }
         }
+        // UI CLOSE
+
+
+
         bind.selfi?.setOnClickListener {
             val intent = Intent(this@MainActivity, changePhoto::class.java)
             startActivity(intent)
@@ -167,7 +135,6 @@ class MainActivity : AppCompatActivity() {
                         }
                         is Result.Success -> {
                             val body = String(response.data)
-                            runOnUiThread { bind.textView.text = body}
 
                             val jsonObject = JSONObject(body)
                             val status = jsonObject.optString("status")
@@ -179,7 +146,6 @@ class MainActivity : AppCompatActivity() {
                                         val imageUrl = output.getString(0)
                                         callback(imageUrl)
                                     } else {
-                                        runOnUiThread { bind.textView.text = "Произошла ошибка" }
                                     }
                                 }
                                 "processing" -> {
@@ -189,7 +155,6 @@ class MainActivity : AppCompatActivity() {
                                     Log.i("Process", status.toString())
                                 }
                                 else -> {
-                                    runOnUiThread { bind.textView.text = "Произошла ошибка" }
                                 }
                             }
                         }

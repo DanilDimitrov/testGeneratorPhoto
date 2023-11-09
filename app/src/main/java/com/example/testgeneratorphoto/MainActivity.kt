@@ -22,6 +22,7 @@ import com.github.kittinunf.result.Result
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -354,21 +355,38 @@ class MainActivity : AppCompatActivity() {
             val db = FirebaseFirestore.getInstance()
             val userDoc = db.collection("Users").document(uid)
 
-            val userData = hashMapOf(
-                "isUserPaid" to false,
-                "numberOfTxt2Img" to 5,
-                "numberOfImg2Img" to 1,
-                "uuid" to uid
-            )
+            // Проверяем, существует ли документ
+            userDoc.get()
+                .addOnSuccessListener { documentSnapshot ->
+                    if (documentSnapshot.exists()) {
+                        // Документ существует, не нужно ничего обновлять
+                        Log.i("USER INFORMATION", "Document already exists")
+                    } else {
+                        // Документ не существует, выполняем запись данных
+                        val userData = hashMapOf(
+                            "isUserPaid" to false,
+                            "numberOfTxt2Img" to 5,
+                            "numberOfImg2Img" to 1,
+                            "uuid" to uid
+                        )
 
-            userDoc.set(userData)
-                .addOnSuccessListener {
-                    // Данные успешно записаны
+                        userDoc.set(userData)
+                            .addOnSuccessListener {
+                                // Данные успешно записаны
+                                Log.i("USER INFORMATION", "Data written successfully")
+                            }
+                            .addOnFailureListener {
+                                // Ошибка записи данных
+                                Log.e("USER INFORMATION", "Failed to write data")
+                            }
+                    }
                 }
                 .addOnFailureListener {
-                    // Ошибка записи данных
+                    // Ошибка получения документа
+                    Log.e("USER INFORMATION", "Failed to get document")
                 }
         }
+
     }
 
 }

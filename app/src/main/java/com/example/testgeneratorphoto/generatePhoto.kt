@@ -28,6 +28,9 @@ import java.io.IOException
 import com.github.kittinunf.fuel.Fuel
 import com.github.kittinunf.fuel.core.extensions.jsonBody
 import com.github.kittinunf.result.Result
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.Channel
@@ -75,6 +78,7 @@ class generatePhoto : AppCompatActivity() {
         val imageSize = manage.getImageSize(this, selectedImageUri!!)
         val width = imageSize?.first
         val height = imageSize?.second
+
 
         fun loadToUpload(callback: (String) -> Unit){
             val projection = arrayOf(MediaStore.Images.Media.DATA)

@@ -11,6 +11,9 @@ import android.widget.ImageButton
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import com.example.testgeneratorphoto.databinding.ActivityChoseColorBinding
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
@@ -23,6 +26,7 @@ class choseColor : AppCompatActivity() {
         setContentView(bind.root)
         val manage = Manage()
         val gson = Gson()
+        val auth = Firebase.auth
 
         val yourImageButton = findViewById<ImageButton>(R.id.imageButton3)
 
@@ -41,11 +45,47 @@ class choseColor : AppCompatActivity() {
 
         fun sendToGenerate(color: String, selectedImageUri: Uri, prompt: List<Model>) {
             val toGenerateIntent = Intent(this@choseColor, generatePhoto::class.java)
-            toGenerateIntent.putExtra("selectedImageUri", selectedImageUri)
-            toGenerateIntent.putExtra("color", color)
-            toGenerateIntent.putExtra("promptModel", gson.toJson(prompt))
-            startActivity(toGenerateIntent)
-            finish()
+            val toHome = Intent(this@choseColor, changePhoto::class.java)
+
+            // Пользователь хочет уменьшить numberOfImg2Img
+            val currentUser = auth.currentUser
+            if (currentUser != null) {
+                val db = FirebaseFirestore.getInstance()
+                val userDoc = db.collection("Users").document(currentUser.uid)
+                userDoc.get()
+                    .addOnSuccessListener { documentSnapshot ->
+                        val numberOfImg2Img = documentSnapshot.getLong("numberOfImg2Img")
+
+                        if (numberOfImg2Img != null && numberOfImg2Img > 0) {
+                            // Уменьшить количество монеток
+                            userDoc.update("numberOfImg2Img", numberOfImg2Img - 1)
+                                .addOnSuccessListener {
+                                    // Значение numberOfImg2Img уменьшено на 1
+                                    Log.i("choseColor", "numberOfImg2Img decremented successfully.")
+                                    toGenerateIntent.putExtra("selectedImageUri", selectedImageUri)
+                                    toGenerateIntent.putExtra("color", color)
+                                    toGenerateIntent.putExtra("promptModel", gson.toJson(prompt))
+                                    startActivity(toGenerateIntent)
+                                    finish()
+                                }
+                                .addOnFailureListener {
+                                    // Ошибка при уменьшении numberOfImg2Img
+                                    Log.e("choseColor", "Failed to decrement numberOfImg2Img.")
+                                }
+                        } else {
+                            Log.e("choseColor", "Not enough coins for numberOfImg2Img.")
+                            toHome.putExtra("noCoins",true)
+                            startActivity(toHome)
+                            finish()
+                        }
+                    }
+                    .addOnFailureListener {
+                        // Ошибка при получении данных пользователя
+                        Log.e("choseColor", "Failed to get user data.")
+                    }
+            }
+
+
         }
         bind.imageButton4.setOnClickListener {
             val toChoseStyle = Intent(this, changePhoto::class.java)

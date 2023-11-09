@@ -69,6 +69,11 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
 
         val animation = AnimationUtils.loadAnimation(this, R.anim.slide_up)
         findViewById<View>(R.id.changePhoto).startAnimation(animation)
+
+        val noCoins = intent.getBooleanExtra("noCoins", false)
+        if(noCoins){
+            Toast.makeText(this, "noCoins", Toast.LENGTH_SHORT).show()
+        }
         // UI
         bind.textApp.paint.shader = uiIntarface.textApp(bind.textApp)
 

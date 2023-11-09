@@ -4,6 +4,7 @@ import com.example.testgeneratorphoto.databinding.ActivityPhotoBinding
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import com.loopj.android.http.AsyncHttpClient
@@ -23,7 +24,15 @@ class Photo_Activity : AppCompatActivity() {
 
 
         val imageUrl = intent.getStringExtra("imageUrl")
-        runOnUiThread {Picasso.get().load(imageUrl).into(bind.Photo)}
+        val styleName = intent.getStringExtra("styleName")
+        if (styleName != null) {
+            Log.i("styleName", styleName)
+        }
+
+        runOnUiThread {
+            Picasso.get().load(imageUrl).into(bind.Photo)
+            bind.textView10.text = "Style: $styleName"
+        }
 
         bind.Download.setOnClickListener{
 

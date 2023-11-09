@@ -36,16 +36,21 @@ import kotlinx.coroutines.launch
 class generatePhoto : AppCompatActivity() {
     lateinit var bind: ActivityGeneratePhotoBinding
     val uploadcare = UploadcareClient("8e5546827ea347b7479c", "67008faeb1a524b9d9c0")
-    private var shouldStopProcessing = false
+    private var isDestroyed = false
 
 
     val handler = Handler(Looper.getMainLooper())
     val apiKey = "Bearer api-f1c9b6f96dce11eea95ce67244d2bd83"
     var fileValue: String = ""
     override fun onBackPressed() {
-        shouldStopProcessing = true // Установите флаг, чтобы прервать выполнение запросов и операций
-        super.onBackPressed() // Вызовите родительский метод для обработки нажатия кнопки "Назад"
+        super.onBackPressed()
+        finish()
     }
+    override fun onDestroy() {
+        super.onDestroy()
+        isDestroyed = true
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -137,7 +142,7 @@ class generatePhoto : AppCompatActivity() {
                         "negative_prompt": "${prompt.negativePrompt}",
                         "width": 768,
                         "strength" : ${prompt.strength},
-                        "height": ${manage.resizeImage(width!!, height!!, 768)},
+                        "height": ${manage.resizeImage(width, height, 768)},
                         "seed": null,
                         "lora_model": ${prompt.lora},
                         "lora_strength": 1,
@@ -150,14 +155,10 @@ class generatePhoto : AppCompatActivity() {
                     reque, "https://creator.aitubo.ai/api/job/create") { imageUrl ->
                     val toHome = Intent(this@generatePhoto, changePhoto::class.java)
 
-                    if (shouldStopProcessing){
-                        startActivity(toHome)
-                        finish()
-                    }
-
                     Log.i("URL", imageUrl)
                     val intentPhoto_Activity = Intent(this@generatePhoto, Photo_Activity::class.java)
                     intentPhoto_Activity.putExtra("imageUrl", imageUrl)
+                    intentPhoto_Activity.putExtra("styleName", prompt.styleName)
                     if(imageUrl == "break"){
                         startActivity(toHome)
                         finish()
@@ -175,81 +176,59 @@ class generatePhoto : AppCompatActivity() {
     }
     fun createImageWithRetry(json: String, apiUrl: String, callback: (String) -> Unit) {
         fun checkStatus(id: String) {
-            if (shouldStopProcessing){
-                callback("break")
-            }
             Fuel.get("https://creator.aitubo.ai/api/job/get?id=$id")
                 .timeout(20000)
                 .response { _, _, result ->
-                    if (shouldStopProcessing){
-                        startActivity(Intent(this@generatePhoto, changePhoto::class.java))
-                        finish()
-                    }
-                    when (result) {
-                        is Result.Failure -> {
-                            val e = result.error.exception
-                            Log.e("error", "API FAILED", e)
-                            handler.postDelayed({ checkStatus(id) }, 3000)
-                            if (shouldStopProcessing){
-                                startActivity(Intent(this@generatePhoto, changePhoto::class.java))
-                                finish()
-                            }
-                        }
-                        is Result.Success -> {
-                            if (shouldStopProcessing){
-                                startActivity(Intent(this@generatePhoto, changePhoto::class.java))
-                                finish()
+                    if (!isDestroyed) {
+
+                        when (result) {
+                            is Result.Failure -> {
+                                val e = result.error.exception
+                                Log.e("error", "API FAILED", e)
+                                handler.postDelayed({ checkStatus(id) }, 3000)
+
                             }
 
-                            val body = String(result.value)
-                            val jsonObject = JSONObject(body)
-                            val status = jsonObject.optInt("status")
-                            Log.i("STATUS", status.toString())
+                            is Result.Success -> {
+                                val body = String(result.value)
+                                val jsonObject = JSONObject(body)
+                                val status = jsonObject.optInt("status")
+                                Log.i("STATUS", status.toString())
 
-                            Log.i("RESULT", jsonObject.toString())
-                            when (status) {
-                                0 -> {
-                                    val data = jsonObject.optJSONObject("data")
-                                    val resultObject = data?.optJSONObject("result")
-                                    val dataObject = resultObject?.optJSONObject("data")
-                                    val imagesArray = dataObject?.optJSONArray("images")
-                                    Log.i("imgs", imagesArray.toString())
-                                    Log.i("dataObject", dataObject.toString())
-                                    if (shouldStopProcessing){
-                                        callback("break")
-                                    }
+                                Log.i("RESULT", jsonObject.toString())
+                                when (status) {
+                                    0 -> {
+                                        val data = jsonObject.optJSONObject("data")
+                                        val resultObject = data?.optJSONObject("result")
+                                        val dataObject = resultObject?.optJSONObject("data")
+                                        val imagesArray = dataObject?.optJSONArray("images")
+                                        Log.i("imgs", imagesArray.toString())
+                                        Log.i("dataObject", dataObject.toString())
 
-                                    if (imagesArray != null && imagesArray.length() > 0) {
-                                        val firstImageUrl = imagesArray.getString(0)
-                                        Log.i("First IMAGE URL", firstImageUrl)
-                                        GlobalScope.launch(Dispatchers.IO) {
-                                            uploadcare.deleteFile(fileValue.toString())
+                                        if (imagesArray != null && imagesArray.length() > 0) {
+                                            val firstImageUrl = imagesArray.getString(0)
+                                            Log.i("First IMAGE URL", firstImageUrl)
+                                            GlobalScope.launch(Dispatchers.IO) {
+                                                uploadcare.deleteFile(fileValue.toString())
 
-                                        }
-                                        callback("https://file.aitubo.ai/${firstImageUrl.toString()}")
+                                            }
+                                            callback("https://file.aitubo.ai/${firstImageUrl.toString()}")
 
 
-
-                                    } else {
-                                        handler.postDelayed({ checkStatus(id) }, 2000)
-                                        if (shouldStopProcessing){
-                                            callback("break")
+                                        } else {
+                                            handler.postDelayed({ checkStatus(id) }, 2000)
                                         }
                                     }
-                                }
 
-                                1 -> {
-                                    handler.postDelayed({ checkStatus(id) }, 3000)
-                                    Log.i("Process", status.toString())
-                                    if (shouldStopProcessing){
-                                        callback("break")
+                                    1 -> {
+                                        handler.postDelayed({ checkStatus(id) }, 3000)
+                                        Log.i("Process", status.toString())
+
                                     }
-                                }
 
-                                else -> {
-                                    handler.postDelayed({ checkStatus(id) }, 3000)
-                                    if (shouldStopProcessing){
-                                        callback("break")
+                                    else -> {
+                                        handler.postDelayed({ checkStatus(id) }, 3000)
+
                                     }
                                 }
                             }
@@ -259,23 +238,21 @@ class generatePhoto : AppCompatActivity() {
         }
 
         fun sendRequest() {
-            if (shouldStopProcessing){
-                callback("break")
-            }
             Fuel.post(apiUrl)
+
+
                 .header("Content-Type" to "application/json")
                 .header("Authorization" to apiKey)
                 .timeout(30000)
                 .jsonBody(json)
                 .response { _, response, result ->
+                    if (!isDestroyed) {
                     when (result) {
                         is Result.Failure -> {
                             val e = result.error.exception
                             Log.e("error", "API FAILED", e)
                             handler.postDelayed({ sendRequest() }, 3000)
-                            if (shouldStopProcessing){
-                                callback("break")
-                            }
+
                         }
 
                         is Result.Success -> {
@@ -286,9 +263,7 @@ class generatePhoto : AppCompatActivity() {
                             Log.i("id", jsonObject.toString())
                             when (code) {
                                 "0" -> {
-                                    if (shouldStopProcessing){
-                                        callback("break")
-                                    }
+
                                     val dataObject = jsonObject.optJSONObject("data")
                                     val id = dataObject?.optString("id")
                                     Log.i("data", dataObject!!.toString())
@@ -301,14 +276,12 @@ class generatePhoto : AppCompatActivity() {
                                 }
                                 else -> {
                                     Log.e("ERROR", "Error $code")
-                                    if (shouldStopProcessing){
-                                        callback("break")
-                                    }
+
                                 }
                             }
                         }
                     }
-                }
+                }}
         }
         Log.i("LOG", "Sending request...")
 

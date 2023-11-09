@@ -197,6 +197,34 @@ Log.i("ARRAYS", allModels.toString())
         return null
     }
 
+    suspend fun getArtPrompt():ArrayList<String> = withContext(Dispatchers.IO) {
+
+        val artPrompts = ArrayList<String>()
+
+
+        val db = FirebaseFirestore.getInstance()
+        val collectionReference = db.collection("Inspiration")
+
+        try {
+            val documents = collectionReference.get().await()
+
+            for (document in documents) {
+                val data = document.data
+                val prompt = data["prompt"].toString()
+
+                artPrompts.add(prompt)
+
+            }
+        } catch (exception: Exception) {
+            Log.i("ERROR", "No DATA")
+            // В случае ошибки, возвращаем пустой список
+        }
+
+        Log.i("ARRAYS", artPrompts.toString())
+        // Добавьте другие списки моделей в массив allModels, если необходимо
+
+        artPrompts
+    }
 
 
 }

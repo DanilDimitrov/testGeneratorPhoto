@@ -9,14 +9,19 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.animation.AnimationUtils
 import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.testgeneratorphoto.databinding.ActivityChangePhotoBinding
@@ -75,7 +80,7 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
             Toast.makeText(this, "noCoins", Toast.LENGTH_SHORT).show()
         }
         // UI
-        bind.textApp.paint.shader = uiIntarface.textApp(bind.textApp)
+        bind.textApp.paint.shader = uiIntarface.textApp(bind.textApp, "ReImage")
 
         // UI CLOSE
 
@@ -180,7 +185,48 @@ bind.aiArt.setOnClickListener {
 
                 }
             }
-            //all styles END
+
+            val text = TextView(this@changePhoto)
+            val allStylesRecyclerView = RecyclerView(this@changePhoto)
+
+            val marginInDp = 20 // Задайте нужное значение отступа в DP
+            val marginInPx = TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                marginInDp.toFloat(),
+                resources.displayMetrics
+            )
+
+            val layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            layoutParams.setMargins(marginInPx.toInt(), 10, marginInPx.toInt(), 0)
+            allStylesRecyclerView.layoutParams = layoutParams
+
+            text.textSize = 17.0F
+            text.text = "All Styles"
+            text.setTextColor(resources.getColor(R.color.white))
+            text.layoutParams = layoutParams
+
+            bind.linear.addView(text)
+
+            val AllStylesAdapter = AllStyleBottomAdapter(allModels[2])
+            val AllStylesLayoutManager = GridLayoutManager(this@changePhoto, 2)
+            allStylesRecyclerView.adapter = AllStylesAdapter
+            allStylesRecyclerView.layoutManager = AllStylesLayoutManager
+            bind.linear.addView(allStylesRecyclerView)
+
+            AllStylesAdapter.setOnItemClickListener { prompt ->
+                Log.i("PROMPT", prompt.toString())
+                startActivityForResult(chosePhoto, REQUEST_IMAGE_PICK)
+                categoryName = prompt.category
+
+                promptModel = listOf(prompt)
+                modelsInCategory = allModels[2]
+
+                Log.i("promptModel", promptModel.toString())
+            }
+
         }
     }
 

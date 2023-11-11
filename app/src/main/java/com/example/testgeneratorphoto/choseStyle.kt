@@ -65,12 +65,12 @@ class choseStyle : AppCompatActivity() {
 
         runOnUiThread {
             Glide.with(bind.aboutStyle)
-                .asGif()
+                .asDrawable()
                 .load(allStylesInCategory[0].preview.toString())
                 .diskCacheStrategy(DiskCacheStrategy.DATA)
                 .into(bind.aboutStyle)
 
-            bind.aboutStyleText.text = allStylesInCategory[0].styleName
+            bind.aboutStyleText.text = ""
         }
         val forYouLayoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
 

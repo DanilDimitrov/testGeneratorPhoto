@@ -9,8 +9,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 
-class AllStyleAdapter(var styles: List<Model>) :
-    RecyclerView.Adapter<AllStyleAdapter.ViewHolder>() {
+class AllStyleBottomAdapter(var styles: List<Model>) :
+    RecyclerView.Adapter<AllStyleBottomAdapter.ViewHolder>() {
     private var onItemClick: ((Model) -> Unit)? = null
 
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -33,7 +33,7 @@ class AllStyleAdapter(var styles: List<Model>) :
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val style = styles[position]
-        holder.allStyleMainText.text = ""
+        holder.allStyleMainText.text =""
         Glide.with(holder.allStyleMainImage)
             .asDrawable()
             .load(style.preview.toString())

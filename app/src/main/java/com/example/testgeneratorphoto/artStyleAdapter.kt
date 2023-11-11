@@ -8,6 +8,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -28,15 +29,27 @@ class artStyleAdapter(var styles: ArrayList<artModel>) :
         init {
             itemView.setOnClickListener {
                 val prompt = styles[adapterPosition]
+                val context = itemView.context
 
-                // Устанавливаем новое значение selectedItem при нажатии
-                val previousSelectedItem = selectedItem
-                selectedItem = adapterPosition
+                if (adapterPosition != selectedItem) {
+                    // Сбросить эффект предыдущего выбранного элемента
+                    if (selectedItem != -1) {
+                        val previousSelectedItem = selectedItem
+                        notifyItemChanged(previousSelectedItem)
+                    }
 
-                // Обновляем цвет элементов RecyclerView
-                notifyDataSetChanged()
+                    // Установить эффект для текущего элемента
+                    val cornerRadiusDrawable = ContextCompat.getDrawable(context, R.drawable.select_item)
+                    card.background = cornerRadiusDrawable
 
-                onItemClick?.invoke(prompt)
+                    selectedItem = adapterPosition
+                    onItemClick?.invoke(prompt)
+                } else {
+                    // Если элемент уже выбран, сбросить эффект и сбросить selectedItem
+                    val cornerRadiusDrawable = ContextCompat.getDrawable(context, R.drawable.radio_unselect)
+                    card.background = cornerRadiusDrawable
+                    selectedItem = -1
+                }
             }
         }
     }
@@ -50,19 +63,13 @@ class artStyleAdapter(var styles: ArrayList<artModel>) :
     @SuppressLint("ResourceAsColor")
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val style = styles[position]
+
         holder.styleNameTextView.text = style.styleName
         Glide.with(holder.styleImageView)
-            .asGif()
+            .asDrawable()
             .load(style.preview)
             .diskCacheStrategy(DiskCacheStrategy.DATA)
             .into(holder.styleImageView)
-
-        // Устанавливаем цвет элемента в зависимости от выбранного элемента
-        if (position == selectedItem) {
-            holder.card.setCardBackgroundColor(ContextCompat.getColor(holder.itemView.context, R.color.black))
-        } else {
-            holder.card.setCardBackgroundColor(ContextCompat.getColor(holder.itemView.context, R.color.white))
-        }
     }
 
     fun setOnItemClickListener(listener: (artModel) -> Unit) {

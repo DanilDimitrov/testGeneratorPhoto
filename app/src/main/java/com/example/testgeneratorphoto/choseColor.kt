@@ -69,7 +69,6 @@ class choseColor : AppCompatActivity() {
                                     finish()
                                 }
                                 .addOnFailureListener {
-                                    // Ошибка при уменьшении numberOfImg2Img
                                     Log.e("choseColor", "Failed to decrement numberOfImg2Img.")
                                 }
                         } else {

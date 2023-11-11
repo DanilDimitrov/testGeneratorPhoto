@@ -42,7 +42,7 @@
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="16dp"
         android:layout_marginBottom="4dp"
         android:gravity="center"
         android:lineSpacingExtra="2sp"
@@ -270,7 +270,8 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/artStyleRecycler"
         android:layout_width="0dp"
-        android:layout_height="115dp"
+
+        android:layout_height="124dp"
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
         android:scrollbars="horizontal"

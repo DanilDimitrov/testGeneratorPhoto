@@ -33,9 +33,9 @@ class StyleAdapter(var styles: List<Model>, private var category: String) :
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val style = styles[position]
-        holder.styleNameTextView.text = style.styleName
+        holder.styleNameTextView.text = ""
         Glide.with(holder.styleImageView)
-            .asGif()
+            .asDrawable()
             .load(style.preview.toString())
             .diskCacheStrategy(DiskCacheStrategy.DATA)
             .into(holder.styleImageView)

@@ -32,8 +32,6 @@ class seeAllStyles : AppCompatActivity() {
     val manage = Manage()
     var width: Int = 0
     var height: Int = 0
-    var fileValue: String = ""
-    lateinit var selectedImageUri: Uri
     lateinit var promptModel: List<Model>
     lateinit var modelsInCategory: List<Model>
     lateinit var categoryName: String
@@ -53,6 +51,7 @@ class seeAllStyles : AppCompatActivity() {
         val allStylesInCategory = gson.fromJson<List<Model>>(allStylesJson, type)
         Log.i("allStylesInCategory", allStylesInCategory.toString())
 
+        bind.textView2.text = allStylesInCategory[0].category
 
         val seeAllAdapter = AllStyleAdapter(allStylesInCategory)
         val seeAllAdapterLayoutManager = GridLayoutManager(this,2)

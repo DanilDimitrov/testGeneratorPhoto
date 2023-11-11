@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="96dp"
+    android:layout_width="116dp"
     android:id="@+id/cardArt"
-    android:layout_height="113dp"
+    android:layout_height="123dp"
     android:layout_marginStart="1dp"
     android:layout_marginEnd="8dp"
-    android:backgroundTint="#7C7C7C"
     android:elevation="10dp"
     app:cardCornerRadius="8dp"
     >
@@ -19,23 +18,25 @@
         app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.184">
+        app:layout_constraintVertical_bias="0.184"
+        >
 
         <ImageView
             android:id="@+id/createArtImage"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginStart="1dp"
-            android:layout_marginTop="1dp"
-
-            android:layout_marginEnd="1dp"
-            android:layout_marginBottom="1dp"
+            android:layout_marginStart="5dp"
+            android:layout_marginTop="5dp"
+            android:layout_marginEnd="5dp"
+            android:layout_marginBottom="5dp"
             android:adjustViewBounds="false"
             android:elevation="1dp"
             android:scaleType="centerCrop"
             android:src="@drawable/gif1"
-            app:circularflow_radiusInDP="10dp"
+            app:circularflow_defaultRadius="8dp"
+            app:circularflow_radiusInDP="8dp"
             app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintCircleRadius="8dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
@@ -47,7 +48,7 @@
             android:id="@+id/createArtText"
             android:layout_width="0dp"
             android:layout_height="23dp"
-            android:layout_marginBottom="1dp"
+            android:layout_marginEnd="5dp"
 
             android:background="#991c1c1c"
             android:elevation="8dp"

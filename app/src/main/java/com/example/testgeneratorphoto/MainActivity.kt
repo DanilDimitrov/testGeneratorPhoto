@@ -54,44 +54,50 @@ class MainActivity : AppCompatActivity() {
         }
 
 
-        bind.size1!!.setOnClickListener {
-            bind.size1!!.isChecked = true
-            bind.size2!!.isChecked = false
-            bind.size3!!.isChecked = false
-            bind.size4!!.isChecked = false
-            bind.size5!!.isChecked = false
+        bind.size1.setOnClickListener {
+            bind.size1.isChecked = true
+            bind.size2.isChecked = false
+            bind.size3.isChecked = false
+            bind.size4.isChecked = false
+            bind.size5.isChecked = false
             selectSize() }
-        bind.size2!!.setOnClickListener {
-            bind.size2!!.isChecked = true
-            bind.size1!!.isChecked = false
-            bind.size3!!.isChecked = false
-            bind.size4!!.isChecked = false
-            bind.size5!!.isChecked = false
+        bind.size2.setOnClickListener {
+            bind.size2.isChecked = true
+            bind.size1.isChecked = false
+            bind.size3.isChecked = false
+            bind.size4.isChecked = false
+            bind.size5.isChecked = false
             selectSize() }
-        bind.size3!!.setOnClickListener {
-            bind.size3!!.isChecked = true
-            bind.size2!!.isChecked = false
-            bind.size1!!.isChecked = false
-            bind.size4!!.isChecked = false
-            bind.size5!!.isChecked = false
+        bind.size3.setOnClickListener {
+            bind.size3.isChecked = true
+            bind.size2.isChecked = false
+            bind.size1.isChecked = false
+            bind.size4.isChecked = false
+            bind.size5.isChecked = false
             selectSize() }
-        bind.size4!!.setOnClickListener {
-            bind.size4!!.isChecked = true
-            bind.size2!!.isChecked = false
-            bind.size3!!.isChecked = false
-            bind.size1!!.isChecked = false
-            bind.size5!!.isChecked = false
+        bind.size4.setOnClickListener {
+            bind.size4.isChecked = true
+            bind.size2.isChecked = false
+            bind.size3.isChecked = false
+            bind.size1.isChecked = false
+            bind.size5.isChecked = false
             selectSize() }
-        bind.size5!!.setOnClickListener {
-            bind.size5!!.isChecked = true
-            bind.size2!!.isChecked = false
-            bind.size3!!.isChecked = false
-            bind.size4!!.isChecked = false
-            bind.size1!!.isChecked = false
+        bind.size5.setOnClickListener {
+            bind.size5.isChecked = true
+            bind.size2.isChecked = false
+            bind.size3.isChecked = false
+            bind.size4.isChecked = false
+            bind.size1.isChecked = false
             selectSize() }
 
         // UI
-        bind.textApp3.paint?.shader = uiIntarface.textApp(bind.textApp3)
+        bind.textApp3.paint?.shader = uiIntarface.textApp(bind.textApp3, "ReImage")
+
+        bind.button4.setOnClickListener {
+            val goTopPro = Intent(this, pro_screen::class.java)
+            startActivity(goTopPro)
+        }
+
         lifecycleScope.launch {
             val artModelsArray = manage.getArtModels()
             val allPrompts = manage.getArtPrompt()
@@ -164,8 +170,9 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        bind.generateSelect.setOnClickListener {
 
+
+        bind.generateSelect.setOnClickListener {
             if (bind.editTextText.text.isEmpty()) {
                 Toast.makeText(this, "Your prompt is empty", Toast.LENGTH_SHORT).show()
             } else if (sizeForGeneration == "") {
@@ -182,44 +189,72 @@ class MainActivity : AppCompatActivity() {
                         .addOnSuccessListener { documentSnapshot ->
                             val numberOfTxt2Img = documentSnapshot.getLong("numberOfTxt2Img")
                             if (numberOfTxt2Img != null && numberOfTxt2Img > 0) {
-                                // Разрешить генерацию и уменьшить количество монеток
-                                val jsonForRequest = """
-                            {
-                                "model_id": "${promptForArt?.model_id}",
-                                "prompt": "${bind.editTextText.text.toString()} ${promptForArt?.prompt}",
-                                "negative_prompt": "${promptForArt?.negative_prompt}",
-                                "width": "$width",
-                                "height": "$height",
-                                "seed": null,
-                                "steps": ${promptForArt?.steps},
-                                "guidance_scale": ${promptForArt?.guidance_scale},
-                                "lora_model": "${promptForArt?.lora_model}",
-                                "lora_strength": ${promptForArt?.lora_strength}
-                            }
-                        """.trimIndent()
-                                Log.i("jsonForRequest", jsonForRequest)
+                                // Перевод текста
+                                lifecycleScope.launch {
+                                    val translatedText =
+                                        manage.translator(bind.editTextText.text.toString(), "uk")
+                                    Log.i("translatedText", translatedText)
 
-                                // Уменьшение количества монеток в Firestore
-                                userDoc.update("numberOfTxt2Img", numberOfTxt2Img - 1)
-                                    .addOnSuccessListener {
-                                        val generateArtIntent = Intent(this, generateArtProcess::class.java)
-                                        generateArtIntent.putExtra("jsonForRequest", jsonForRequest)
-                                        generateArtIntent.putExtra("styleName", promptForArt?.styleName.toString())
+                                    // Создание JSON-объекта
+                                    val jsonForRequest = """
+                                {
+                                    "model_id": "${promptForArt?.model_id}",
+                                    "prompt": "$translatedText ${promptForArt?.prompt}",
+                                    "negative_prompt": "${promptForArt?.negative_prompt}",
+                                    "width": "$width",
+                                    "height": "$height",
+                                    "seed": null,
+                                    "steps": ${promptForArt?.steps},
+                                    "guidance_scale": ${promptForArt?.guidance_scale},
+                                    "lora_model": "${promptForArt?.lora_model}",
+                                    "lora_strength": ${promptForArt?.lora_strength}
+                                }
+                            """.trimIndent()
+                                    Log.i("jsonForRequest", jsonForRequest)
+
+                                    if (bind.textView16.text == "∞") {
+                                        val generateArtIntent = Intent(
+                                            this@MainActivity,
+                                            generateArtProcess::class.java
+                                        )
+                                        generateArtIntent.putExtra(
+                                            "jsonForRequest",
+                                            jsonForRequest
+                                        )
+                                        generateArtIntent.putExtra(
+                                            "styleName",
+                                            promptForArt?.styleName.toString()
+                                        )
                                         startActivity(generateArtIntent)
+                                    } else {
+                                        // Уменьшение количества монеток в Firestore
+                                        userDoc.update("numberOfTxt2Img", numberOfTxt2Img - 1)
+                                            .addOnSuccessListener {
+                                                val generateArtIntent = Intent( this@MainActivity, generateArtProcess::class.java)
+                                                generateArtIntent.putExtra("jsonForRequest", jsonForRequest)
+                                                generateArtIntent.putExtra("styleName", promptForArt?.styleName.toString())
+                                                startActivity(generateArtIntent)
+                                            }
+                                            .addOnFailureListener {
+                                                Toast.makeText(
+                                                    this@MainActivity,
+                                                    "Failed to update coins.",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
                                     }
-                                    .addOnFailureListener {
-                                        Toast.makeText(this, "Failed to update coins.", Toast.LENGTH_SHORT).show()
-                                    }
+                                }
                             } else {
-                                Toast.makeText(this, "Not enough coins.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this@MainActivity, "Not enough coins.", Toast.LENGTH_SHORT).show()
                             }
                         }
                         .addOnFailureListener {
-                            Toast.makeText(this, "Failed to get user data.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@MainActivity, "Failed to get user data.", Toast.LENGTH_SHORT).show()
                         }
                 }
             }
         }
+
 
     }
 
@@ -361,6 +396,26 @@ class MainActivity : AppCompatActivity() {
                     if (documentSnapshot.exists()) {
                         // Документ существует, не нужно ничего обновлять
                         Log.i("USER INFORMATION", "Document already exists")
+                        val isUserPaid = documentSnapshot.getBoolean("isUserPaid") ?: false
+                        val txt2img = documentSnapshot.get("numberOfImg2Img")
+                        Log.i("USER INFORMATION", "isUserPaid: $isUserPaid")
+
+                        // В зависимости от значения isUserPaid, выводим соответствующее сообщение
+                        if (isUserPaid) {
+                            Log.i("USER INFORMATION", "The user is paid.")
+                            bind.button4.visibility = View.INVISIBLE
+                            bind.imageView5.visibility = View.VISIBLE
+                            bind.textView16.visibility = View.VISIBLE
+                            bind.textView16.text = "∞"
+                            //bind.textView16.text = txt2img.toString()
+
+                        } else {
+                            Log.i("USER INFORMATION", "The user is not paid.")
+                            bind.button4.visibility = View.VISIBLE
+                            bind.imageView5.visibility = View.INVISIBLE
+                            bind.textView16.visibility = View.INVISIBLE
+                            bind.textView16.text = txt2img.toString()
+                        }
                     } else {
                         // Документ не существует, выполняем запись данных
                         val userData = hashMapOf(

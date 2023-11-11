@@ -40,6 +40,9 @@
         android:theme="@style/Theme.TestGeneratorPhoto"
         tools:targetApi="33">
         <activity
+            android:name=".pro_screen"
+            android:exported="false" />
+        <activity
             android:name=".seeAllForArt"
             android:exported="false" />
         <activity

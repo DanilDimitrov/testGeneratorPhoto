@@ -90,7 +90,8 @@ class Manage {
 
             for (document in documents) {
                 val data = document.data
-                val preview = data["gifPath"].toString()
+                val preview = data["categoryImage"].toString()
+                val headerImage = data["headerImage"].toString()
                 val strength = data["strength"].toString().toDouble()
                 val modelId = data["modelId"].toString()
                 val count = data["count"].toString().toByte()
@@ -102,7 +103,7 @@ class Manage {
                 val lora = data["lora"].toString()
                 val category = data["category"].toString()
 
-                val model = Model(preview, styleName, count, modelId, strength, prompt, negativePrompt, controlModel, steps, lora, category)
+                val model = Model(preview, headerImage, styleName, count, modelId, strength, prompt, negativePrompt, controlModel, steps, lora, category)
 
                 when (category) {
                     "Header" -> headersModels.add(model)
@@ -139,15 +140,15 @@ Log.i("ARRAYS", allModels.toString())
 
             for (document in documents) {
                 val data = document.data
-                val preview = data["gifPath"].toString()
-                val lora_strength = data["lora_strength"].toString().toByte()
-                val modelId = data["model_id"].toString()
-                val guidance_scale = data["guidance_scale"].toString().toByte()
-                val styleName = data["styleName"].toString()
-                val prompt = data["prompt"].toString()
-                val steps = data["steps"].toString().toByte()
-                val negativePrompt = data["negative_prompt"].toString()
-                val lora_model = data["lora_model"].toString()
+                val preview = data["gifPath"]?.toString()
+                val lora_strength = data["lora_strength"]?.toString()?.toByte()
+                val modelId = data["model_id"]?.toString()
+                val guidance_scale = data["guidance_scale"]?.toString()?.toByte()
+                val styleName = data["styleName"]?.toString()
+                val prompt = data["prompt"]?.toString()
+                val steps = data["steps"]?.toString()?.toByte()
+                val negativePrompt = data["negative_prompt"]?.toString()
+                val lora_model = data["lora_model"]?.toString()
 
                 val model = artModel(preview, styleName, guidance_scale, lora_model, modelId, prompt, negativePrompt, steps, lora_strength)
                 artModels.add(model)

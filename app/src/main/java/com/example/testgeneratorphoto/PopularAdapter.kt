@@ -21,11 +21,11 @@ class PopularAdapter(private val models: ArrayList<Model>): RecyclerView.Adapter
 
         fun bind(model: Model){
             itemView.tag = model
-            itemTextView.text = model.styleName.toString()
+            itemTextView.text = ""
 
             itemImageView.scaleType = ImageView.ScaleType.CENTER_CROP
             Glide.with(itemImageView)
-                .asGif()
+                .asDrawable()
                 .load(model.preview.toString())
                 .diskCacheStrategy(DiskCacheStrategy.DATA)
                 .into(itemImageView)

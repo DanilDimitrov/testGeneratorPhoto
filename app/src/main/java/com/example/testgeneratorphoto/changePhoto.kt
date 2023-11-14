@@ -1,26 +1,29 @@
 package com.example.testgeneratorphoto
 
-import CategoryAdapter
 import Manage
 import StyleAdapter
+import android.Manifest
 import android.content.Intent
-import android.content.res.Resources
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
-import android.view.ViewGroup
+import android.util.TypedValue
+import android.view.LayoutInflater
+import android.view.View
+import android.view.animation.AnimationUtils
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.view.marginStart
-import androidx.core.widget.NestedScrollView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -29,6 +32,7 @@ import com.example.testgeneratorphoto.databinding.ActivityChangePhotoBinding
 import com.github.kittinunf.fuel.Fuel
 import com.github.kittinunf.fuel.core.extensions.jsonBody
 import com.github.kittinunf.result.Result
+import com.google.gson.Gson
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
@@ -53,13 +57,51 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
     lateinit var bind: ActivityChangePhotoBinding
     private val REQUEST_IMAGE_PICK = 1
      var fileValue: String = ""
-    val apiKey = "Bearer api-f1c9b6f96dce11eea95ce67244d2bd83"
-    val handler = Handler(Looper.getMainLooper())
-    val uploadcare = UploadcareClient("8e5546827ea347b7479c", "9a60e9e2427b72234e5d")
+
     val manage = Manage()
     val uiIntarface = UIIntreface()
     var width: Int = 0
     var height: Int = 0
+    val chosePhoto = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+    lateinit var promptModel : List<Model>
+    lateinit var modelsInCategory: List<Model>
+    lateinit var categoryName: String
+
+    private fun checkCameraPermission() {
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.READ_MEDIA_IMAGES
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.READ_MEDIA_IMAGES),
+                12
+            )
+
+        } else {
+            // Permission already granted
+            // Your existing logic here
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == 12) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+            } else {
+
+                checkCameraPermission()
+            }
+        }
+    }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,20 +110,24 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
 
         bind = ActivityChangePhotoBinding.inflate(layoutInflater)
         setContentView(bind.root)
+
+        val animation = AnimationUtils.loadAnimation(this, R.anim.slide_up)
+        findViewById<View>(R.id.changePhoto).startAnimation(animation)
+
+        val noCoins = intent.getBooleanExtra("noCoins", false)
+        if(noCoins){
+            Toast.makeText(this, "noCoins", Toast.LENGTH_SHORT).show()
+        }
         // UI
-        bind.textApp.paint.shader = uiIntarface.textApp(bind.textApp)
+        bind.textApp.paint.shader = uiIntarface.textApp(bind.textApp, "ReImage")
 
         // UI CLOSE
 
-        bind.photo.setOnClickListener {
-            val goToPhoto = Intent(this, MainActivity::class.java)
-            startActivity(goToPhoto)
-        }
-
-        bind.select.setOnClickListener{
-            val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-            startActivityForResult(intent, REQUEST_IMAGE_PICK)
-        }
+bind.aiArt.setOnClickListener {
+    val i = Intent(this, MainActivity::class.java)
+    startActivity(i)
+    finish()
+}
 
         lifecycleScope.launch {
             val allModels = manage.getAllCollections()
@@ -106,11 +152,15 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
             bind.recyclerView.scrollToPosition(centerPosition)
 
             headerAdapter.setOnItemClickListener { prompt ->
+                checkCameraPermission()
                 Log.i("PROMPT", prompt.toString())
+                categoryName  = prompt.category
+                modelsInCategory = allModels[0].filter { it.category == categoryName }
+                startActivityForResult(chosePhoto, REQUEST_IMAGE_PICK)
+                promptModel = listOf(prompt)
+                Log.i("promptModel", promptModel.toString())
 
-                bind.generate.setOnClickListener {
-                    makeReq(prompt)
-                }
+
             }
             // Header adapter END
 
@@ -121,66 +171,108 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
             bind.popular.layoutManager = popularLayoutManager
 
             popularAdapter.setOnItemClickListener { prompt ->
+                checkCameraPermission()
                 Log.i("PROMPT", prompt.toString())
-
-                bind.generate.setOnClickListener {
-                    makeReq(prompt)
-                }
+                categoryName  = prompt.category
+                modelsInCategory = allModels[1].filter { it.category == categoryName }
+                startActivityForResult(chosePhoto, REQUEST_IMAGE_PICK)
+                promptModel = listOf(prompt)
+                Log.i("promptModel", promptModel.toString())
             }
             // Popular adapter END
 
             //all styles
             for (category in categories) {
                 // Создаем заголовок категории
-                val categoryHeader = TextView(this@changePhoto)
-                val params = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                )
+                val itemView = LayoutInflater.from(this@changePhoto).inflate(R.layout.text_adapter, null)
+                val categoryHeader = itemView.findViewById<TextView>(R.id.categoryTextView)
+                val seeAllButton = itemView.findViewById<ImageButton>(R.id.imageButton)
+                val categoryRecyclerView = itemView.findViewById<RecyclerView>(R.id.categoryRecyclerView)
+
+                // Настройка текста и изображения
                 categoryHeader.text = category
-                categoryHeader.textSize = 17f
-                params.marginStart = (12 * Resources.getSystem().displayMetrics.density).toInt()
-                params.topMargin = (8 * Resources.getSystem().displayMetrics.density).toInt()
-                params.bottomMargin = (8 * Resources.getSystem().displayMetrics.density).toInt()
-
-                categoryHeader.setTextColor(ContextCompat.getColor(this@changePhoto, R.color.white))
-                categoryHeader.layoutParams = params
-                bind.linear.addView(categoryHeader)
-
-                // Создаем RecyclerView для стилей категории
-                val categoryRecyclerView = RecyclerView(this@changePhoto)
-                categoryRecyclerView.layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
                 categoryRecyclerView.layoutManager = LinearLayoutManager(this@changePhoto, LinearLayoutManager.HORIZONTAL, false)
-                categoryRecyclerView.layoutParams = params
 
-                bind.linear.addView(categoryRecyclerView)
+                bind.linear.addView(itemView)
 
                 // Фильтруем стили по категории
                 val stylesForCategory = allModels[2].filter { it.category == category }
 
                 // Создаем адаптер и связываем его с RecyclerView
-                val styleAdapter = StyleAdapter(stylesForCategory)
+                val styleAdapter = StyleAdapter(stylesForCategory, category)
                 categoryRecyclerView.adapter = styleAdapter
 
+                seeAllButton.setOnClickListener {
+                    checkCameraPermission()
+                    val allStylesInCategory = allModels[2].filter { it.category == category }
+
+                    val gson = Gson()
+                    val allStylesJson = gson.toJson(allStylesInCategory)
+
+                    val seeAllIntent = Intent(this@changePhoto, seeAllStyles::class.java)
+
+                    seeAllIntent.putExtra("allStylesInCategory", allStylesJson)
+                    Log.i("allStylesJson", allStylesJson.toString())
+                    startActivity(seeAllIntent)
+                }
+
                 styleAdapter.setOnItemClickListener { prompt ->
+                    checkCameraPermission()
                     Log.i("PROMPT", prompt.toString())
-                    bind.generate.setOnClickListener {
-                        makeReq(prompt)
-                    }
+                    categoryName  = prompt.category
+                    modelsInCategory = allModels[2].filter { it.category == categoryName }
+
+                    startActivityForResult(chosePhoto, REQUEST_IMAGE_PICK)
+                    promptModel = listOf(prompt)
+                    Log.i("promptModel", promptModel.toString())
+
                 }
             }
 
+            val text = TextView(this@changePhoto)
+            val allStylesRecyclerView = RecyclerView(this@changePhoto)
 
-            //all styles END
+            val marginInDp = 20 // Задайте нужное значение отступа в DP
+            val marginInPx = TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                marginInDp.toFloat(),
+                resources.displayMetrics
+            )
+
+            val layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            layoutParams.setMargins(marginInPx.toInt(), 10, marginInPx.toInt(), 0)
+            allStylesRecyclerView.layoutParams = layoutParams
+
+            text.textSize = 17.0F
+            text.text = "All Styles"
+            text.setTextColor(resources.getColor(R.color.white))
+            text.layoutParams = layoutParams
+
+            bind.linear.addView(text)
+
+            val AllStylesAdapter = AllStyleBottomAdapter(allModels[2])
+            val AllStylesLayoutManager = GridLayoutManager(this@changePhoto, 2)
+            allStylesRecyclerView.adapter = AllStylesAdapter
+            allStylesRecyclerView.layoutManager = AllStylesLayoutManager
+            bind.linear.addView(allStylesRecyclerView)
+
+            AllStylesAdapter.setOnItemClickListener { prompt ->
+                checkCameraPermission()
+                Log.i("PROMPT", prompt.toString())
+                startActivityForResult(chosePhoto, REQUEST_IMAGE_PICK)
+                categoryName = prompt.category
+
+                promptModel = listOf(prompt)
+                modelsInCategory = allModels[2]
+
+                Log.i("promptModel", promptModel.toString())
+            }
+
         }
-
-
     }
-
-
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -189,12 +281,9 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
 
             if (selectedImageUri != null) {
                 // FACE DETECTOR
-                bind.select.isEnabled = false
-                bind.generate.isEnabled = false
-
                 Log.i("selectedImageUri", selectedImageUri.toString())
 
-                val imageSize = manage.getImageSize(this, selectedImageUri.toString())
+                val imageSize = manage.getImageSize(this, selectedImageUri)
 
                 if(imageSize != null){
                     width = imageSize.first
@@ -211,61 +300,26 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
                 faceDetector.process(image)
                     .addOnSuccessListener { faces ->
                         if (faces.isNotEmpty()) {
-                            Log.i("FACE DETECTION", "FACE YES")
-                            runOnUiThread { bind.imageView2.setImageURI(selectedImageUri) }
-                            val projection = arrayOf(MediaStore.Images.Media.DATA)
-                            val cursor = contentResolver.query(selectedImageUri, projection, null, null, null)
+                            val choseStyleIntent = Intent(this@changePhoto, choseStyle::class.java)
 
-                            cursor?.use {
-                                val columnIndex = it.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
-                                it.moveToFirst()
-                                val filePath = it.getString(columnIndex)
-                                val file = File(filePath)
+                            val gson = Gson()
+                            val styleForChose = gson.toJson(promptModel)
+                            val modelsJson = gson.toJson(modelsInCategory)
 
-                                val apiKey = "8e5546827ea347b7479c"
-                                val uploadUrl = "https://upload.uploadcare.com/base/"
-                                val client = OkHttpClient()
-                                val requestBody = MultipartBody.Builder()
-                                    .setType(MultipartBody.FORM)
-                                    .addFormDataPart("UPLOADCARE_PUB_KEY", apiKey)
-                                    .addFormDataPart("UPLOADCARE_STORE", "auto")
-                                    .addFormDataPart(
-                                        "file",
-                                        file.name,
-                                        file.asRequestBody("image/*".toMediaTypeOrNull())
-                                    )
-                                    .build()
+                            choseStyleIntent.putExtra("styleForChose", styleForChose)
+                            Log.i("styleForChose", styleForChose.toString())
+                            choseStyleIntent.putExtra("selectedImageUri", selectedImageUri)
+                            Log.i("selectedImageUri", selectedImageUri.toString())
+                            choseStyleIntent.putExtra("modelsInCategory", modelsJson)
 
-                                val request = Request.Builder()
-                                    .url(uploadUrl)
-                                    .post(requestBody)
-                                    .build()
 
-                                client.newCall(request).enqueue(object : Callback {
-                                    override fun onFailure(call: Call, e: IOException) {
-                                        Log.e("NetworkError", e.message ?: "Unknown error")
-                                    }
 
-                                    override fun onResponse(call: Call, response: Response) {
-                                        if (response.isSuccessful) {
-                                            val responseBody = response.body?.string()
-                                            Log.i("LOG", responseBody.toString())
-                                            val jsonObject = JSONObject(responseBody!!)
+                            startActivity(choseStyleIntent)
 
-                                            fileValue = jsonObject.getString("file")
-                                            Log.i("LOG", fileValue.toString())
-                                            runOnUiThread {  bind.select.isEnabled = true
-                                                bind.generate.isEnabled = true
-                                            }
-
-                                        } else {
-                                            // Handle the response error here
-                                        }
-                                    }
-                                })
-                            }
                         } else {
                             Toast.makeText(this, "Change photo", Toast.LENGTH_SHORT).show()
+                            startActivityForResult(chosePhoto, REQUEST_IMAGE_PICK)
+
                         }
                     }
                     .addOnFailureListener { e ->
@@ -277,139 +331,11 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
         }
     }
 
-    fun createImageWithRetry(json: String, apiUrl: String, callback: (String) -> Unit) {
-        fun checkStatus(id: String) {
-            Fuel.get("https://creator.aitubo.ai/api/job/get?id=$id")
-                .timeout(20000)
-                .response { _, _, result ->
-                    when (result) {
-                        is Result.Failure -> {
-                            val e = result.error.exception
-                            Log.e("error", "API FAILED", e)
-                            handler.postDelayed({ checkStatus(id) }, 3000)
-                        }
-
-                        is Result.Success -> {
-                            val body = String(result.value)
-                            val jsonObject = JSONObject(body)
-                            val status = jsonObject.optInt("status")
-                            Log.i("STATUS", status.toString())
-
-                            Log.i("RESULT", jsonObject.toString())
-                            when (status) {
-                                0 -> {
-                                    val data = jsonObject.optJSONObject("data")
-                                    val resultObject = data?.optJSONObject("result")
-                                    val dataObject = resultObject?.optJSONObject("data")
-                                    val imagesArray = dataObject?.optJSONArray("images")
-                                    Log.i("imgs", imagesArray.toString())
-                                    Log.i("dataObject", dataObject.toString())
-
-                                    if (imagesArray != null && imagesArray.length() > 0) {
-                                        val firstImageUrl = imagesArray.getString(0)
-                                        Log.i("First IMAGE URL", firstImageUrl)
-                                        GlobalScope.launch(Dispatchers.IO) {
-                                            uploadcare.deleteFile(fileValue.toString())
-
-                                        }
-                                        callback("https://file.aitubo.ai/${firstImageUrl.toString()}")
 
 
 
-                                    } else {
-                                        handler.postDelayed({ checkStatus(id) }, 2000)
-                                    }
-                                }
-
-                                1 -> {
-                                    handler.postDelayed({ checkStatus(id) }, 3000)
-                                    Log.i("Process", status.toString())
-                                }
-
-                                else -> {
-                                    handler.postDelayed({ checkStatus(id) }, 3000)
-                                }
-                            }
-                        }
-                    }
-                }
-        }
-
-        fun sendRequest() {
-            Fuel.post(apiUrl)
-                .header("Content-Type" to "application/json")
-                .header("Authorization" to apiKey)
-                .timeout(30000)
-                .jsonBody(json)
-                .response { _, response, result ->
-                    when (result) {
-                        is Result.Failure -> {
-                            val e = result.error.exception
-                            Log.e("error", "API FAILED", e)
-                            handler.postDelayed({ sendRequest() }, 3000)
-                        }
-
-                        is Result.Success -> {
-                            val body = String(response.data)
-
-                            val jsonObject = JSONObject(body)
-                            val code = jsonObject.optString("code")
-                            Log.i("id", jsonObject.toString())
-                            when (code) {
-                                "0" -> {
-                                    val dataObject = jsonObject.optJSONObject("data")
-                                    val id = dataObject?.optString("id")
-                                    Log.i("data", dataObject!!.toString())
-                                    Log.i("id", id.toString())
-                                    if (id != null) {
-                                        Log.i("LOG", "Checking status for ID: $id")
-                                        checkStatus(id)
-                                    }
-
-                                }
-                                else -> {
-                                    Log.e("ERROR", "Error $code")
-                                }
-                            }
-                        }
-                    }
-                }
-        }
-        Log.i("LOG", "Sending request...")
-
-        sendRequest()
-    }
 
 
-
-fun makeReq(prompt: Model){
-    val reque =    """
-    {
-        "model_id": "${prompt.modelId}",
-        "controlModel": "${prompt.controlModel}",
-        "imagePath": "https://ucarecdn.com/${fileValue}/-/preview/768x${manage.resizeImage(width, height, 768)}/-/quality/smart/-/format/auto/",
-        "prompt": "${prompt.prompt}",
-        "negative_prompt": "${prompt.negativePrompt}",
-        "width": 768,
-        "strength" : ${prompt.strength},
-        "height": ${manage.resizeImage(width, height, 768)}, 
-        "seed": null,
-	  "lora_model": ${prompt.lora},
-	  "lora_strength": 1, 
-      "steps": ${prompt.steps}
-    }
-    """.trimIndent()
-    Log.i("reque", reque)
-    createImageWithRetry(
-        reque, "https://creator.aitubo.ai/api/job/create") { imageUrl ->
-        runOnUiThread {
-            Log.i("URL", imageUrl)
-            intent = Intent(this@changePhoto, Photo_Activity::class.java)
-            intent.putExtra("imageUrl", imageUrl)
-            startActivity(intent)
-        }
-    }
-}
 
 
 

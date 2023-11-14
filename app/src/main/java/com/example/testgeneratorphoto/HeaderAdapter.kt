@@ -24,12 +24,12 @@ class HeaderAdapter(private val models: ArrayList<Model>): RecyclerView.Adapter<
 
         fun bind(model: Model){
             itemView.tag = model
-            itemTextView.text = model.styleName.toString()
+            itemTextView.text = ""
 
-            itemImageView.scaleType = ImageView.ScaleType.CENTER_CROP
+            itemImageView.scaleType = ImageView.ScaleType.FIT_XY
             Glide.with(itemImageView)
-                .asGif()
-                .load(model.preview.toString())
+                .asDrawable()
+                .load(model.previewHeader.toString())
                 .diskCacheStrategy(DiskCacheStrategy.DATA)
                 .into(itemImageView)
 

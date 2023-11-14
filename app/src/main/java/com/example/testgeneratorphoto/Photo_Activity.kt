@@ -1,8 +1,11 @@
 package com.example.testgeneratorphoto
+import android.content.Intent
 import com.example.testgeneratorphoto.databinding.ActivityPhotoBinding
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
+import android.util.Log
+import android.view.View
 import android.widget.Toast
 import com.loopj.android.http.AsyncHttpClient
 import com.loopj.android.http.FileAsyncHttpResponseHandler
@@ -21,7 +24,29 @@ class Photo_Activity : AppCompatActivity() {
 
 
         val imageUrl = intent.getStringExtra("imageUrl")
-        runOnUiThread {Picasso.get().load(imageUrl).into(bind.Photo) }
+        val styleName = intent.getStringExtra("styleName")
+        if (styleName != null) {
+            Log.i("styleName", styleName)
+        }
+
+        runOnUiThread {
+            Picasso.get().load(imageUrl).into(bind.Photo)
+            bind.textView10.text = "Style: $styleName"
+        }
+
+        // Обработчик нажатия на кнопку "Поделиться"
+        bind.Share.setOnClickListener {
+
+            // Создание Intent для отправки текста
+            val shareIntent = Intent().apply {
+                action = Intent.ACTION_SEND
+                putExtra(Intent.EXTRA_TEXT, imageUrl)
+                type = "text/plain"
+            }
+
+            // Запуск окна "Поделиться"
+            startActivity(Intent.createChooser(shareIntent, "Поделиться с помощью"))
+        }
 
         bind.Download.setOnClickListener{
 
@@ -39,6 +64,24 @@ class Photo_Activity : AppCompatActivity() {
                     Toast.makeText(this@Photo_Activity, "Image downloaded and saved!", Toast.LENGTH_SHORT).show()
                 }
             })
+        }
+
+        bind.switch2.setOnCheckedChangeListener { buttonView, isChecked ->
+            // В этом обработчике вы можете реагировать на изменение состояния кнопки
+            if (isChecked) {
+                // Кнопка включена, выполняйте необходимые действия
+            } else {
+                // Кнопка выключена, выполняйте необходимые действия
+            }
+        }
+
+        bind.more.setOnClickListener {bind.moreImage.visibility = View.VISIBLE
+        }
+        bind.cancel.setOnClickListener { bind.moreImage.visibility = View.INVISIBLE }
+        bind.goToHome.setOnClickListener {
+            val goHomeIntent = Intent(this, changePhoto::class.java)
+            startActivity(goHomeIntent)
+            finish()
         }
     }
 }

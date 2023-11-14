@@ -15,9 +15,9 @@ import androidx.compose.material.MaterialTheme
 
 
 class UIIntreface {
-    fun textApp(textView: TextView): LinearGradient {
+    fun textApp(textView: TextView, text: String): LinearGradient {
 
-        textView.text = "ReImage"
+        textView.text = text
 
         val paint = textView.paint
         val widthText = paint.measureText("ReImage")

@@ -23,7 +23,7 @@ class seeAllArtAdapter(private val models: List<artModel>): RecyclerView.Adapter
 
             itemImageView.scaleType = ImageView.ScaleType.CENTER_CROP
             Glide.with(itemImageView)
-                .asGif()
+                .asDrawable()
                 .load(model.preview.toString())
                 .diskCacheStrategy(DiskCacheStrategy.DATA)
                 .into(itemImageView)

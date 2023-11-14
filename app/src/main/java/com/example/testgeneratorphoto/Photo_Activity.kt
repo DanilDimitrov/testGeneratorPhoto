@@ -34,6 +34,20 @@ class Photo_Activity : AppCompatActivity() {
             bind.textView10.text = "Style: $styleName"
         }
 
+        // Обработчик нажатия на кнопку "Поделиться"
+        bind.Share.setOnClickListener {
+
+            // Создание Intent для отправки текста
+            val shareIntent = Intent().apply {
+                action = Intent.ACTION_SEND
+                putExtra(Intent.EXTRA_TEXT, imageUrl)
+                type = "text/plain"
+            }
+
+            // Запуск окна "Поделиться"
+            startActivity(Intent.createChooser(shareIntent, "Поделиться с помощью"))
+        }
+
         bind.Download.setOnClickListener{
 
             val directory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)

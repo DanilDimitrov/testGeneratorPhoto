@@ -2,7 +2,9 @@ package com.example.testgeneratorphoto
 
 import Manage
 import StyleAdapter
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
@@ -20,6 +22,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -63,6 +67,41 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
     lateinit var modelsInCategory: List<Model>
     lateinit var categoryName: String
 
+    private fun checkCameraPermission() {
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.READ_MEDIA_IMAGES
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.READ_MEDIA_IMAGES),
+                12
+            )
+
+        } else {
+            // Permission already granted
+            // Your existing logic here
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == 12) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+            } else {
+
+                checkCameraPermission()
+            }
+        }
+    }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -113,6 +152,7 @@ bind.aiArt.setOnClickListener {
             bind.recyclerView.scrollToPosition(centerPosition)
 
             headerAdapter.setOnItemClickListener { prompt ->
+                checkCameraPermission()
                 Log.i("PROMPT", prompt.toString())
                 categoryName  = prompt.category
                 modelsInCategory = allModels[0].filter { it.category == categoryName }
@@ -131,6 +171,7 @@ bind.aiArt.setOnClickListener {
             bind.popular.layoutManager = popularLayoutManager
 
             popularAdapter.setOnItemClickListener { prompt ->
+                checkCameraPermission()
                 Log.i("PROMPT", prompt.toString())
                 categoryName  = prompt.category
                 modelsInCategory = allModels[1].filter { it.category == categoryName }
@@ -162,6 +203,7 @@ bind.aiArt.setOnClickListener {
                 categoryRecyclerView.adapter = styleAdapter
 
                 seeAllButton.setOnClickListener {
+                    checkCameraPermission()
                     val allStylesInCategory = allModels[2].filter { it.category == category }
 
                     val gson = Gson()
@@ -175,6 +217,7 @@ bind.aiArt.setOnClickListener {
                 }
 
                 styleAdapter.setOnItemClickListener { prompt ->
+                    checkCameraPermission()
                     Log.i("PROMPT", prompt.toString())
                     categoryName  = prompt.category
                     modelsInCategory = allModels[2].filter { it.category == categoryName }
@@ -217,6 +260,7 @@ bind.aiArt.setOnClickListener {
             bind.linear.addView(allStylesRecyclerView)
 
             AllStylesAdapter.setOnItemClickListener { prompt ->
+                checkCameraPermission()
                 Log.i("PROMPT", prompt.toString())
                 startActivityForResult(chosePhoto, REQUEST_IMAGE_PICK)
                 categoryName = prompt.category

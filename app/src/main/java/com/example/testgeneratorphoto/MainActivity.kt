@@ -15,10 +15,23 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.testgeneratorphoto.databinding.ActivityMainBinding
 import org.json.JSONObject
 import com.google.firebase.auth.FirebaseAuth
-
+import android.Manifest
+import android.app.AlertDialog
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.github.kittinunf.fuel.Fuel
 import com.github.kittinunf.fuel.core.extensions.jsonBody
 import com.github.kittinunf.result.Result
+import com.google.android.gms.ads.AdError
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.FullScreenContentCallback
+import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.rewarded.RewardedAd
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -28,6 +41,8 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.launch
 import kotlin.random.Random
+import pub.devrel.easypermissions.EasyPermissions
+
 
 class MainActivity : AppCompatActivity() {
     lateinit var bind: ActivityMainBinding
@@ -38,6 +53,67 @@ class MainActivity : AppCompatActivity() {
     var promptForArt: artModel? = null
     var width :Int? = null
     var height :Int? = null
+    private val READ_EXTERNAL_STORAGE_REQUEST_CODE = 12
+    var rewardedAd: RewardedAd? = null
+
+    private fun checkCameraPermission() {
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.READ_MEDIA_IMAGES
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.READ_MEDIA_IMAGES),
+                READ_EXTERNAL_STORAGE_REQUEST_CODE
+            )
+
+        } else {
+            // Permission already granted
+            // Your existing logic here
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == READ_EXTERNAL_STORAGE_REQUEST_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+            } else {
+
+                checkCameraPermission()
+            }
+        }
+    }
+ fun loadAd(){
+     val adRequest = AdRequest.Builder().build()
+     RewardedAd.load(this, "ca-app-pub-9370272402380511/5176048905", adRequest, object : RewardedAdLoadCallback(){
+         override fun onAdFailedToLoad(p0: LoadAdError) {
+             super.onAdFailedToLoad(p0)
+         }
+
+         override fun onAdLoaded(p0: RewardedAd) {
+             super.onAdLoaded(p0)
+             rewardedAd = p0
+         }
+     })
+ }
+
+    fun adListener() = object : FullScreenContentCallback(){
+        override fun onAdDismissedFullScreenContent() {
+            super.onAdDismissedFullScreenContent()
+        }
+
+        override fun onAdFailedToShowFullScreenContent(p0: AdError) {
+            super.onAdFailedToShowFullScreenContent(p0)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,6 +122,7 @@ class MainActivity : AppCompatActivity() {
         // AUTH
         val gson = Gson()
         auth = Firebase.auth
+        MobileAds.initialize(this){}
         val prompt = intent.getStringExtra("promptFromSeeAll")
         if (prompt != null){
             val type = object : TypeToken<artModel>() {}.type
@@ -144,6 +221,8 @@ class MainActivity : AppCompatActivity() {
 
         }
         bind.generate.setOnClickListener {
+            checkCameraPermission()
+
             if(bind.editTextText.text.isEmpty()){
                 Toast.makeText(this, "Your prompt is empty", Toast.LENGTH_SHORT).show()
             }
@@ -245,7 +324,26 @@ class MainActivity : AppCompatActivity() {
                                     }
                                 }
                             } else {
-                                Toast.makeText(this@MainActivity, "Not enough coins.", Toast.LENGTH_SHORT).show()
+
+                                    val alertDialogBuilder = AlertDialog.Builder(this)
+                                    alertDialogBuilder.setTitle("Нет монеток")
+                                    alertDialogBuilder.setMessage("У вас нет монеток. Получите монетки, просмотрев рекламу или подписавшись.")
+                                    alertDialogBuilder.setPositiveButton("AD") { dialogInterface, _ ->
+                                   rewardedAd?.show(this){rewardItem ->
+                                       rewardItem.amount
+
+                                   }
+                                        dialogInterface.dismiss()
+                                    }
+                                    alertDialogBuilder.setNegativeButton("Pro") { dialogInterface, _ ->
+                                        val toPro = Intent(this, pro_screen::class.java)
+                                        startActivity(toPro)
+                                        dialogInterface.dismiss()
+                                    }
+
+                                    val alertDialog: AlertDialog = alertDialogBuilder.create()
+                                    alertDialog.show()
+
                             }
                         }
                         .addOnFailureListener {

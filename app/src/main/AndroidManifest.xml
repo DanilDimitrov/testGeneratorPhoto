@@ -8,11 +8,11 @@
         android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.CAMERA" />
+
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="com.miui.gallery.permission.USE_INTERNAL_PROVIDER" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="com.company.contentprovider.READ_DATABASE" />
     <uses-permission android:name="com.company.contentprovider.WRITE_DATABASE" />
@@ -23,6 +23,10 @@
     <permission
         android:name="de.test.WRITE_DATABASE"
         android:protectionLevel="normal" />
+
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
 
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
@@ -38,44 +42,52 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.TestGeneratorPhoto"
-        tools:targetApi="33">
+        tools:targetApi="33"
+        >
         <activity
             android:name=".pro_screen"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="portrait"/>
+
+
         <activity
             android:name=".seeAllForArt"
-            android:exported="false" />
+            android:exported="false"  android:screenOrientation="portrait"/>
         <activity
             android:name=".generateArtProcess"
-            android:exported="false" />
+            android:exported="false"  android:screenOrientation="portrait"/>
         <activity
             android:name=".generatePhoto"
-            android:exported="false" />
+            android:exported="false"  android:screenOrientation="portrait"/>
         <activity
             android:name=".choseColor"
-            android:exported="false" />
+            android:exported="false"  android:screenOrientation="portrait"/>
         <activity
             android:name=".choseStyle"
-            android:exported="false" />
+            android:exported="false"  android:screenOrientation="portrait"/>
         <activity
             android:name=".seeAllStyles"
-            android:exported="false" />
+            android:exported="false"  android:screenOrientation="portrait"/>
         <activity
             android:name=".Photo_Activity"
-            android:exported="false" />
+            android:exported="false"  android:screenOrientation="portrait"/>
         <activity
             android:name=".changePhoto"
-            android:exported="false" />
+            android:exported="false"  android:screenOrientation="portrait"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:windowSoftInputMode="adjustResize">
+            android:windowSoftInputMode="adjustResize"  android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-9370272402380511~7708797186"/>
     </application>
 
 </manifest>

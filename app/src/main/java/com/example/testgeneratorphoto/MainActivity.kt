@@ -101,6 +101,7 @@ class MainActivity : AppCompatActivity() {
          override fun onAdLoaded(p0: RewardedAd) {
              super.onAdLoaded(p0)
              rewardedAd = p0
+             rewardedAd?.fullScreenContentCallback = adListener()
          }
      })
  }
@@ -108,10 +109,14 @@ class MainActivity : AppCompatActivity() {
     fun adListener() = object : FullScreenContentCallback(){
         override fun onAdDismissedFullScreenContent() {
             super.onAdDismissedFullScreenContent()
+            rewardedAd = null
+            loadAd()
         }
 
         override fun onAdFailedToShowFullScreenContent(p0: AdError) {
             super.onAdFailedToShowFullScreenContent(p0)
+            rewardedAd = null
+            loadAd()
         }
     }
 
@@ -121,6 +126,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(bind.root)
         // AUTH
         val gson = Gson()
+        loadAd()
         auth = Firebase.auth
         MobileAds.initialize(this){}
         val prompt = intent.getStringExtra("promptFromSeeAll")
@@ -329,9 +335,48 @@ class MainActivity : AppCompatActivity() {
                                     alertDialogBuilder.setTitle("Нет монеток")
                                     alertDialogBuilder.setMessage("У вас нет монеток. Получите монетки, просмотрев рекламу или подписавшись.")
                                     alertDialogBuilder.setPositiveButton("AD") { dialogInterface, _ ->
-                                   rewardedAd?.show(this){rewardItem ->
+                                   Log.i("ad", "print ad")
+                                        rewardedAd?.show(this){rewardItem ->
+                                            Log.i("ad", "print ad")
                                        rewardItem.amount
+                                            lifecycleScope.launch {
+                                                val translatedText =
+                                                    manage.translator(
+                                                        bind.editTextText.text.toString(),
+                                                        "uk"
+                                                    )
+                                                Log.i("translatedText", translatedText)
 
+                                                // Создание JSON-объекта
+                                                val jsonForRequest = """
+                                {
+                                    "model_id": "${promptForArt?.model_id}",
+                                    "prompt": "$translatedText ${promptForArt?.prompt}",
+                                    "negative_prompt": "${promptForArt?.negative_prompt}",
+                                    "width": "$width",
+                                    "height": "$height",
+                                    "seed": null,
+                                    "steps": ${promptForArt?.steps},
+                                    "guidance_scale": ${promptForArt?.guidance_scale},
+                                    "lora_model": "${promptForArt?.lora_model}",
+                                    "lora_strength": ${promptForArt?.lora_strength}
+                                }
+                            """.trimIndent()
+                                                Log.i("jsonForRequest", jsonForRequest)
+                                                val generateArtIntent = Intent(
+                                                    this@MainActivity,
+                                                    generateArtProcess::class.java
+                                                )
+                                                generateArtIntent.putExtra(
+                                                    "jsonForRequest",
+                                                    jsonForRequest
+                                                )
+                                                generateArtIntent.putExtra(
+                                                    "styleName",
+                                                    promptForArt?.styleName.toString()
+                                                )
+                                                startActivity(generateArtIntent)
+                                            }
                                    }
                                         dialogInterface.dismiss()
                                     }
@@ -455,6 +500,17 @@ class MainActivity : AppCompatActivity() {
 
         val currentUser = auth.currentUser
         signInAnonymously()
+        loadAd()
+        Log.i("ad", "loaded")
+
+    }
+
+    override fun onResume() {
+        super.onResume()
+        loadAd()
+        Log.i("ad", "loaded")
+
+
     }
 
 

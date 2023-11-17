@@ -74,7 +74,6 @@ class MainActivity : AppCompatActivity() {
             // Your existing logic here
         }
     }
-
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -91,6 +90,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
  fun loadAd(){
      val adRequest = AdRequest.Builder().build()
      RewardedAd.load(this, "ca-app-pub-9370272402380511/5176048905", adRequest, object : RewardedAdLoadCallback(){
@@ -105,7 +105,6 @@ class MainActivity : AppCompatActivity() {
          }
      })
  }
-
     fun adListener() = object : FullScreenContentCallback(){
         override fun onAdDismissedFullScreenContent() {
             super.onAdDismissedFullScreenContent()
@@ -136,7 +135,10 @@ class MainActivity : AppCompatActivity() {
             Log.i("promptForArt", promptForArt.toString())
         }
 
-
+bind.aiSelfies.setOnClickListener{
+    val toAiSelfiies = Intent(this, aiSelfiies::class.java)
+    startActivity(toAiSelfiies)
+}
         bind.size1.setOnClickListener {
             bind.size1.isChecked = true
             bind.size2.isChecked = false
@@ -174,7 +176,7 @@ class MainActivity : AppCompatActivity() {
             selectSize() }
 
         // UI
-        bind.textApp3.paint?.shader = uiIntarface.textApp(bind.textApp3, "ReImage")
+        bind.reImageAiSelfie.paint?.shader = uiIntarface.textApp(bind.reImageAiSelfie, "ReImage")
 
         bind.button4.setOnClickListener {
             val goTopPro = Intent(this, pro_screen::class.java)

@@ -271,6 +271,11 @@ bind.aiArt.setOnClickListener {
                 Log.i("promptModel", promptModel.toString())
             }
 
+
+        }
+        bind.aiSelfies.setOnClickListener{
+            val toAiSelfiies = Intent(this, aiSelfiies::class.java)
+            startActivity(toAiSelfiies)
         }
     }
 

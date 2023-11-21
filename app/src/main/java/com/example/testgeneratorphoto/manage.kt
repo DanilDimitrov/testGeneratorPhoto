@@ -73,7 +73,28 @@ class Manage {
             return@withContext ""
         }
     }
-    // Определяем функцию-колбэк для передачи данных
+
+    suspend fun getBannedWords(): ArrayList<String> = withContext(Dispatchers.IO) {
+        val allBannedWords = ArrayList<String>()
+
+        val db = FirebaseFirestore.getInstance()
+        val collectionReference = db.collection("BannedWords")
+
+        try {
+            val documents = collectionReference.get().await()
+
+            for (document in documents) {
+                val word = document.getString("word")
+                word?.let {
+                    allBannedWords.add(it)
+                }
+            }
+        } catch (exception: Exception) {
+            Log.i("ERROR", "No DATA")
+        }
+
+        allBannedWords
+    }
 
 
 

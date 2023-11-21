@@ -56,6 +56,7 @@ class MainActivity : AppCompatActivity() {
     var height :Int? = null
     private val READ_EXTERNAL_STORAGE_REQUEST_CODE = 12
     var rewardedAd: RewardedAd? = null
+    lateinit var allBannedWords: ArrayList<String>
 
     private fun checkCameraPermission() {
         if (ContextCompat.checkSelfPermission(
@@ -198,6 +199,8 @@ bind.aiSelfies.setOnClickListener{
         lifecycleScope.launch {
             val artModelsArray = manage.getArtModels()
             val allPrompts = manage.getArtPrompt()
+            allBannedWords = manage.getBannedWords()
+
 
             val artModels = artModelsArray[0]
             Log.i("artModels", artModels.toString())
@@ -294,8 +297,15 @@ bind.aiSelfies.setOnClickListener{
                                         manage.translator(bind.editTextText.text.toString(), "uk")
                                     Log.i("translatedText", translatedText)
 
-                                    // Создание JSON-объекта
-                                    val jsonForRequest = """
+                                    if (allBannedWords.any { translatedText.contains(it) }) {
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Your prompt has banned word",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    } else {
+                                        // Создание JSON-объекта
+                                        val jsonForRequest = """
                                 {
                                     "model_id": "${promptForArt?.model_id}",
                                     "prompt": "$translatedText ${promptForArt?.prompt}",
@@ -309,38 +319,48 @@ bind.aiSelfies.setOnClickListener{
                                     "lora_strength": ${promptForArt?.lora_strength}
                                 }
                             """.trimIndent()
-                                    Log.i("jsonForRequest", jsonForRequest)
+                                        Log.i("jsonForRequest", jsonForRequest)
 
-                                    if (isUserAccessGallery) {
-                                        val generateArtIntent = Intent(
-                                            this@MainActivity,
-                                            generateArtProcess::class.java
-                                        )
-                                        generateArtIntent.putExtra(
-                                            "jsonForRequest",
-                                            jsonForRequest
-                                        )
-                                        generateArtIntent.putExtra(
-                                            "styleName",
-                                            promptForArt?.styleName.toString()
-                                        )
-                                        startActivity(generateArtIntent)
-                                    } else {
-                                        // Уменьшение количества монеток в Firestore
-                                        userDoc.update("numberOfTxt2Img", numberOfTxt2Img - 1)
-                                            .addOnSuccessListener {
-                                                val generateArtIntent = Intent( this@MainActivity, generateArtProcess::class.java)
-                                                generateArtIntent.putExtra("jsonForRequest", jsonForRequest)
-                                                generateArtIntent.putExtra("styleName", promptForArt?.styleName.toString())
-                                                startActivity(generateArtIntent)
-                                            }
-                                            .addOnFailureListener {
-                                                Toast.makeText(
-                                                    this@MainActivity,
-                                                    "Failed to update coins.",
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-                                            }
+                                        if (isUserAccessGallery) {
+                                            val generateArtIntent = Intent(
+                                                this@MainActivity,
+                                                generateArtProcess::class.java
+                                            )
+                                            generateArtIntent.putExtra(
+                                                "jsonForRequest",
+                                                jsonForRequest
+                                            )
+                                            generateArtIntent.putExtra(
+                                                "styleName",
+                                                promptForArt?.styleName.toString()
+                                            )
+                                            startActivity(generateArtIntent)
+                                        } else {
+                                            // Уменьшение количества монеток в Firestore
+                                            userDoc.update("numberOfTxt2Img", numberOfTxt2Img - 1)
+                                                .addOnSuccessListener {
+                                                    val generateArtIntent = Intent(
+                                                        this@MainActivity,
+                                                        generateArtProcess::class.java
+                                                    )
+                                                    generateArtIntent.putExtra(
+                                                        "jsonForRequest",
+                                                        jsonForRequest
+                                                    )
+                                                    generateArtIntent.putExtra(
+                                                        "styleName",
+                                                        promptForArt?.styleName.toString()
+                                                    )
+                                                    startActivity(generateArtIntent)
+                                                }
+                                                .addOnFailureListener {
+                                                    Toast.makeText(
+                                                        this@MainActivity,
+                                                        "Failed to update coins.",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                        }
                                     }
                                 }
                             } else {

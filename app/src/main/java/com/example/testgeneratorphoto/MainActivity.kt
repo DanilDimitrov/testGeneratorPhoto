@@ -47,6 +47,7 @@ import pub.devrel.easypermissions.EasyPermissions
 class MainActivity : AppCompatActivity() {
     lateinit var bind: ActivityMainBinding
     val manage = Manage()
+    var isUserAccessGallery = false
     private lateinit var auth: FirebaseAuth
     val uiIntarface = UIIntreface()
     var sizeForGeneration = ""
@@ -96,6 +97,7 @@ class MainActivity : AppCompatActivity() {
      RewardedAd.load(this, "ca-app-pub-9370272402380511/5176048905", adRequest, object : RewardedAdLoadCallback(){
          override fun onAdFailedToLoad(p0: LoadAdError) {
              super.onAdFailedToLoad(p0)
+             loadAd()
          }
 
          override fun onAdLoaded(p0: RewardedAd) {
@@ -133,6 +135,16 @@ class MainActivity : AppCompatActivity() {
             val type = object : TypeToken<artModel>() {}.type
             promptForArt = gson.fromJson(prompt, type)
             Log.i("promptForArt", promptForArt.toString())
+        }
+
+        bind.button4.setOnClickListener {
+            val toPro = Intent(this, pro_screen::class.java)
+            startActivity(toPro)
+        }
+
+        bind.userIcon.setOnClickListener {
+            val toGallery = Intent(this, Gallery::class.java)
+            startActivity(toGallery)
         }
 
 bind.aiSelfies.setOnClickListener{
@@ -299,7 +311,7 @@ bind.aiSelfies.setOnClickListener{
                             """.trimIndent()
                                     Log.i("jsonForRequest", jsonForRequest)
 
-                                    if (bind.textView16.text == "∞") {
+                                    if (isUserAccessGallery) {
                                         val generateArtIntent = Intent(
                                             this@MainActivity,
                                             generateArtProcess::class.java
@@ -500,7 +512,6 @@ bind.aiSelfies.setOnClickListener{
     public override fun onStart() {
         super.onStart()
 
-        val currentUser = auth.currentUser
         signInAnonymously()
         loadAd()
         Log.i("ad", "loaded")
@@ -553,25 +564,33 @@ bind.aiSelfies.setOnClickListener{
                         // Документ существует, не нужно ничего обновлять
                         Log.i("USER INFORMATION", "Document already exists")
                         val isUserPaid = documentSnapshot.getBoolean("isUserPaid") ?: false
-                        val txt2img = documentSnapshot.get("numberOfImg2Img")
+                        val txt2img = documentSnapshot.get("numberOfTxt2Img")
+                        isUserAccessGallery = documentSnapshot.getBoolean("isUserAccessGallery") ?: false
+
                         Log.i("USER INFORMATION", "isUserPaid: $isUserPaid")
 
                         // В зависимости от значения isUserPaid, выводим соответствующее сообщение
                         if (isUserPaid) {
                             Log.i("USER INFORMATION", "The user is paid.")
-                            bind.button4.visibility = View.INVISIBLE
                             bind.imageView5.visibility = View.VISIBLE
                             bind.textView16.visibility = View.VISIBLE
-                            bind.textView16.text = "∞"
-                            //bind.textView16.text = txt2img.toString()
+                            bind.textView16.text = txt2img.toString()
 
                         } else {
                             Log.i("USER INFORMATION", "The user is not paid.")
-                            bind.button4.visibility = View.VISIBLE
                             bind.imageView5.visibility = View.INVISIBLE
                             bind.textView16.visibility = View.INVISIBLE
-                            bind.textView16.text = txt2img.toString()
                         }
+                        if(isUserAccessGallery){
+                            bind.button4.visibility = View.INVISIBLE
+                            bind.imageView5.visibility = View.VISIBLE
+                            bind.textView16.visibility = View.VISIBLE
+                            bind.textView16.text = txt2img.toString()
+                            isUserAccessGallery = true
+                        }
+                        else {bind.button4.visibility = View.VISIBLE
+                            isUserAccessGallery = false}
+
                     } else {
                         // Документ не существует, выполняем запись данных
                         val userData = hashMapOf(

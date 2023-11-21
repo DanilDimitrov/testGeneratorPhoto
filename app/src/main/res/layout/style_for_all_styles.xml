@@ -30,9 +30,10 @@
             android:layout_height="match_parent"
             android:adjustViewBounds="false"
             android:elevation="1dp"
-            app:circularflow_radiusInDP="10dp"
             android:scaleType="centerCrop"
             android:src="@drawable/gif1"
+            android:visibility="visible"
+            app:circularflow_radiusInDP="10dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
@@ -65,6 +66,19 @@
             app:layout_constraintStart_toStartOf="@+id/allStyleMainImage"
             app:layout_constraintTop_toTopOf="@+id/allStyleMainImage"
             app:layout_constraintVertical_bias="1.0" />
+
+        <com.google.android.exoplayer2.ui.PlayerView
+            android:id="@+id/video"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="visible"
+            app:auto_show="true"
+            app:layout_constraintBottom_toBottomOf="@+id/allStyleMainText"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/allStyleMainImage"
+            app:resize_mode="zoom"
+            app:use_controller="false" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

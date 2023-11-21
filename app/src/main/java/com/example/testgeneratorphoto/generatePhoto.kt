@@ -3,6 +3,8 @@ package com.example.testgeneratorphoto
 import Manage
 import android.app.Activity
 import android.content.Intent
+import com.uploadcare.android.library.api.UploadcareClient
+import com.uploadcare.android.library.api.UploadcareFile
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -10,10 +12,11 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
+import android.view.View
+import androidx.recyclerview.widget.GridLayoutManager
 import com.example.testgeneratorphoto.databinding.ActivityGeneratePhotoBinding
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.uploadcare.android.library.api.UploadcareClient
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -28,18 +31,32 @@ import java.io.IOException
 import com.github.kittinunf.fuel.Fuel
 import com.github.kittinunf.fuel.core.extensions.jsonBody
 import com.github.kittinunf.result.Result
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
+import com.uploadcare.android.library.callbacks.UploadFileCallback
+import com.uploadcare.android.library.exceptions.UploadFailureException
+import com.uploadcare.android.library.exceptions.UploadcareApiException
+import com.uploadcare.android.library.upload.FileUploader
+import com.uploadcare.android.library.upload.UrlUploader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
+import okhttp3.MediaType
+import okhttp3.RequestBody
+import org.json.JSONException
 
 class generatePhoto : AppCompatActivity() {
     lateinit var bind: ActivityGeneratePhotoBinding
     val uploadcare = UploadcareClient("8e5546827ea347b7479c", "67008faeb1a524b9d9c0")
     private var isDestroyed = false
+    private lateinit var auth: FirebaseAuth
+    var isUserGallery = false
+    var urlFileUploader: String = ""
 
 
     val handler = Handler(Looper.getMainLooper())
@@ -54,6 +71,39 @@ class generatePhoto : AppCompatActivity() {
         isDestroyed = true
     }
 
+    fun uploadFromUrl(url: String, callback: (String) -> Unit) {
+        val uploader = UrlUploader(uploadcare, url)
+            .store(true)
+
+        try {
+            uploader.uploadAsync(object : UploadFileCallback {
+                override fun onFailure(e: UploadcareApiException) {
+                    // Handle errors.
+                }
+
+                override fun onProgressUpdate(
+                    bytesWritten: Long,
+                    contentLength: Long,
+                    progress: Double) {
+                    // Upload progress info.
+                }
+
+                override fun onSuccess(result: UploadcareFile) {
+                    // Successfully uploaded file to Uploadcare.
+                    urlFileUploader = result.originalFileUrl.toString()
+                    Log.i("file", result.toString())
+                    callback(urlFileUploader)
+                }
+            })
+
+        } catch (e: UploadFailureException) {
+            // Handle errors.
+        }
+
+    }
+
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -62,6 +112,10 @@ class generatePhoto : AppCompatActivity() {
         setContentView(bind.root)
         val manage = Manage()
         val gson = Gson()
+        auth = FirebaseAuth.getInstance()
+        val user = auth.currentUser
+        updateUI(user)
+
 
         val styleinjson = intent.getStringExtra("promptModel")
         val color = intent.getStringExtra("color")
@@ -132,6 +186,7 @@ class generatePhoto : AppCompatActivity() {
             }
         }
 
+
         fun makeReq(prompt: Model) {
 
             loadToUpload()
@@ -158,8 +213,29 @@ class generatePhoto : AppCompatActivity() {
                 createImageWithRetry(
                     reque, "https://creator.aitubo.ai/api/job/create") { imageUrl ->
                     val toHome = Intent(this@generatePhoto, changePhoto::class.java)
-
                     Log.i("URL", imageUrl)
+
+                    if (isUserGallery) {
+                        uploadFromUrl(imageUrl) {url ->
+
+
+                            val uid = user?.uid
+                            val db = FirebaseFirestore.getInstance()
+                            val documentReference = db.collection("Users").document(uid!!)
+
+                            documentReference.update(
+                                "imagesUrls",
+                                FieldValue.arrayUnion(url)
+                            )
+                                .addOnSuccessListener {
+                                    Log.i("imagesUrls", url)
+                                }
+                                .addOnFailureListener {
+
+                                }
+
+                        }
+                    }
                     val intentPhoto_Activity = Intent(this@generatePhoto, Photo_Activity::class.java)
                     intentPhoto_Activity.putExtra("imageUrl", imageUrl)
                     intentPhoto_Activity.putExtra("styleName", prompt.styleName)
@@ -292,5 +368,33 @@ class generatePhoto : AppCompatActivity() {
         sendRequest()
     }
 
+    private fun updateUI(user: FirebaseUser?) {
+        Log.i("USER INFORMATION", user?.isAnonymous.toString())
+        if (user?.isAnonymous == true) {
+            val uid = user.uid
+            val db = FirebaseFirestore.getInstance()
+            val userDoc = db.collection("Users").document(uid)
+
+            userDoc.get()
+                .addOnSuccessListener { documentSnapshot ->
+                    Log.i("USER INFORMATION", "Document already exists")
+
+                    val isUserAccessGallery = documentSnapshot.getBoolean("isUserAccessGallery") ?: false
+                    Log.i("USER INFORMATION", "isUserPaid: $isUserAccessGallery")
+
+                    if (isUserAccessGallery) {
+                        Log.i("USER INFORMATION", "The user is paid.")
+                        isUserGallery = true
+                    } else {
+                        Log.i("USER INFORMATION", "The user is not paid.")
+                        isUserGallery = false
+                    }
+
+                }
+                .addOnFailureListener {
+                    Log.e("USER INFORMATION", "Failed to get document")
+                }
+        }
+    }
 
 }

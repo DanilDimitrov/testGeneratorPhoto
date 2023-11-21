@@ -65,6 +65,20 @@
             app:layout_constraintTop_toTopOf="@+id/styleMainImage"
             app:layout_constraintVertical_bias="1.0" />
 
+        <com.google.android.exoplayer2.ui.PlayerView
+            android:id="@+id/video"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:auto_show="true"
+            app:layout_constraintBottom_toTopOf="@+id/styleMainImage"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="1.0"
+            app:layout_constraintStart_toEndOf="@+id/styleMainImage"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="1.0"
+            app:resize_mode="zoom"
+            app:use_controller="false" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.cardview.widget.CardView>

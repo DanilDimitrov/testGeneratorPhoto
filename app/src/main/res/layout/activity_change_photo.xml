@@ -17,7 +17,7 @@
         android:layout_height="0dp"
         android:layout_marginStart="411dp"
         android:layout_marginTop="203dp"
-        app:constraint_referenced_ids="button2,textApp,imageButton2"
+        app:constraint_referenced_ids="button2,textApp,userIcon"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -100,12 +100,12 @@
         android:textStyle="bold"
         android:visibility="invisible"
         app:layout_constraintBottom_toTopOf="@+id/textView4"
-        app:layout_constraintEnd_toStartOf="@id/imageButton2"
+        app:layout_constraintEnd_toStartOf="@id/userIcon"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.0" />
 
     <ImageButton
-        android:id="@+id/imageButton2"
+        android:id="@+id/userIcon"
         android:layout_width="36dp"
         android:layout_height="36dp"
         android:layout_marginStart="8dp"

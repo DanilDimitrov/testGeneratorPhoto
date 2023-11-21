@@ -31,8 +31,7 @@ class aiSelfiies : AppCompatActivity() {
     lateinit var bind: ActivityAiSelfiiesBinding
     val uiIntarface = UIIntreface()
     private val REQUEST_IMAGE_CAPTURE = 1
-    private var currentPhotoPath: String? = null // Добавьте это как переменную класса
-    // Функция для создания файла изображения
+    private var currentPhotoPath: String? = null
     @Throws(IOException::class)
     private fun createImageFile(): File {
         val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
@@ -46,11 +45,6 @@ class aiSelfiies : AppCompatActivity() {
         }
     }
 
-    // Функция для сохранения изображения в файл
-
-
-
-    // Функция для запуска камеры
     private fun dispatchTakePictureIntent() {
         Intent(MediaStore.ACTION_IMAGE_CAPTURE).also { takePictureIntent ->
             takePictureIntent.resolveActivity(packageManager)?.also {
@@ -58,6 +52,7 @@ class aiSelfiies : AppCompatActivity() {
             }
         }
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         bind = ActivityAiSelfiiesBinding.inflate(layoutInflater)
@@ -87,7 +82,7 @@ class aiSelfiies : AppCompatActivity() {
             }
         }
     }
-    // Обработка результата из камеры
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == Activity.RESULT_OK) {
@@ -96,7 +91,7 @@ class aiSelfiies : AppCompatActivity() {
             val photoFile: File = createImageFile()
             photoFile.let {
 
-                val imageUri = Uri.fromFile(it) // Получение URI файла
+                val imageUri = Uri.fromFile(it)
 
                 val image: InputImage = InputImage.fromFilePath(this, imageUri)
 
@@ -106,7 +101,6 @@ class aiSelfiies : AppCompatActivity() {
                     .addOnSuccessListener { faces ->
                         if (faces.isNotEmpty()) {
 
-                            // Передача URI в другую активити
                             val toResult = Intent(this, resultAiSelfie::class.java)
                             toResult.putExtra("imageUri", imageUri.toString())
                             startActivity(toResult)

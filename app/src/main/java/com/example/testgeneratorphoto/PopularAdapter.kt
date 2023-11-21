@@ -11,6 +11,9 @@ import androidx.core.view.marginEnd
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.google.android.exoplayer2.MediaItem
+import com.google.android.exoplayer2.SimpleExoPlayer
+import com.google.android.exoplayer2.ui.PlayerView
 
 class PopularAdapter(private val models: ArrayList<Model>): RecyclerView.Adapter<PopularAdapter.StyleHolder>() {
     private var onItemClick: ((Model) -> Unit)? = null
@@ -18,18 +21,33 @@ class PopularAdapter(private val models: ArrayList<Model>): RecyclerView.Adapter
     class StyleHolder(item: View) : RecyclerView.ViewHolder(item){
         private val itemImageView: ImageView = item.findViewById(R.id.popularImage)
         private val itemTextView: TextView = item.findViewById(R.id.popularText)
+        val playerView = itemView.findViewById<PlayerView>(R.id.video)
+
 
         fun bind(model: Model){
             itemView.tag = model
             itemTextView.text = ""
 
-            itemImageView.scaleType = ImageView.ScaleType.CENTER_CROP
-            Glide.with(itemImageView)
-                .asDrawable()
-                .load(model.preview.toString())
-                .diskCacheStrategy(DiskCacheStrategy.DATA)
-                .into(itemImageView)
+            if (".mp4" in model.preview.toString()) {
+                itemImageView.visibility = View.INVISIBLE
+                val mediaItem = MediaItem.fromUri(model.preview.toString())
+                val exoPlayer = SimpleExoPlayer.Builder(itemView.context).build()
+                playerView.player = exoPlayer
+                // Подготовка ExoPlayer
+                exoPlayer.setMediaItem(mediaItem)
+                exoPlayer.prepare()
+                exoPlayer.play()
 
+
+            }else {
+
+                itemImageView.scaleType = ImageView.ScaleType.CENTER_CROP
+                Glide.with(itemImageView)
+                    .asDrawable()
+                    .load(model.preview.toString())
+                    .diskCacheStrategy(DiskCacheStrategy.DATA)
+                    .into(itemImageView)
+            }
         }
     }
     fun setOnItemClickListener(listener: (Model) -> Unit) {

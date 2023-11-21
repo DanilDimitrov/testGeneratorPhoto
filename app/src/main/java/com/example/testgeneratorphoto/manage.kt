@@ -8,7 +8,10 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
+import android.view.View
 import androidx.core.content.ContextCompat.startActivity
+import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.testgeneratorphoto.Model
 import com.example.testgeneratorphoto.Photo_Activity
 import com.example.testgeneratorphoto.R
@@ -33,11 +36,9 @@ import java.io.IOException
 
 
 class Manage {
-    val uploadcare = UploadcareClient("8e5546827ea347b7479c", "9a60e9e2427b72234e5d")
     var width: Int = 0
     var height: Int = 0
-    val handler = Handler(Looper.getMainLooper())
-    val apiKey = "Bearer api-f1c9b6f96dce11eea95ce67244d2bd83"
+
     suspend fun translator(inputText: String, fromLang: String): String = withContext(Dispatchers.IO) {
         val client = OkHttpClient()
 
@@ -73,6 +74,7 @@ class Manage {
         }
     }
     // Определяем функцию-колбэк для передачи данных
+
 
 
 

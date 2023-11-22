@@ -1,6 +1,7 @@
 package com.example.testgeneratorphoto
 
 import Manage
+import android.app.Dialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -13,6 +14,7 @@ import android.provider.Settings
 import android.util.Log
 import android.view.View
 import android.view.animation.AnimationUtils
+import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -149,8 +151,16 @@ class choseStyle : AppCompatActivity() {
                             startActivity(choseStyleIntent)
 
                         } else {
-                            Toast.makeText(this, "Change photo", Toast.LENGTH_SHORT).show()
-                            startActivityForResult(chosePhoto, 1)
+                            val dialog = Dialog(this)
+                            dialog.setContentView(R.layout.alert_change_photo)
+
+                            val Ok = dialog.findViewById<TextView>(R.id.Ok)
+                            Ok.setOnClickListener {
+                                startActivityForResult(chosePhoto, 1)
+                                dialog.dismiss()
+                            }
+
+                            dialog.show()
 
                         }
                     }
@@ -193,8 +203,16 @@ class choseStyle : AppCompatActivity() {
 
                     }
                     else {
-                Toast.makeText(this, "Change photo", Toast.LENGTH_SHORT).show()
-                startActivityForResult(chosePhoto, 1)
+                        val dialog = Dialog(this)
+                        dialog.setContentView(R.layout.alert_change_photo)
+
+                        val Ok = dialog.findViewById<TextView>(R.id.Ok)
+                        Ok.setOnClickListener {
+                            startActivityForResult(chosePhoto, 1)
+                            dialog.dismiss()
+                        }
+
+                        dialog.show()
 
                  }
             }

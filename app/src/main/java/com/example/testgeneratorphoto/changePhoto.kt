@@ -3,12 +3,11 @@ package com.example.testgeneratorphoto
 import Manage
 import StyleAdapter
 import android.Manifest
+import android.app.Dialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
 import android.util.TypedValue
@@ -18,10 +17,7 @@ import android.view.animation.AnimationUtils
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -29,9 +25,6 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.testgeneratorphoto.databinding.ActivityChangePhotoBinding
-import com.github.kittinunf.fuel.Fuel
-import com.github.kittinunf.fuel.core.extensions.jsonBody
-import com.github.kittinunf.result.Result
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
@@ -41,21 +34,7 @@ import com.google.gson.Gson
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
-import com.uploadcare.android.library.api.UploadcareClient
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import okhttp3.Call
-import okhttp3.Callback
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.Response
-import org.json.JSONObject
-import java.io.File
-import java.io.IOException
 
 class changePhoto : AppCompatActivity() { // Поменял название класса
 
@@ -123,7 +102,23 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
 
         val noCoins = intent.getBooleanExtra("noCoins", false)
         if(noCoins){
-            Toast.makeText(this, "noCoins", Toast.LENGTH_SHORT).show()
+            val dialog = Dialog(this)
+            dialog.setContentView(R.layout.alert_limit)
+
+            val Continue = dialog.findViewById<TextView>(R.id.textView40)
+            val Cancel = dialog.findViewById<TextView>(R.id.Cancel)
+
+            Continue.setOnClickListener {
+                val toPro = Intent(this, pro_screen::class.java)
+                startActivity(toPro)
+                dialog.dismiss()
+            }
+            Cancel.setOnClickListener {
+                dialog.dismiss()
+            }
+
+
+            dialog.show()
         }
         // UI
         bind.textApp.paint.shader = uiIntarface.textApp(bind.textApp, "ReImage")
@@ -138,6 +133,10 @@ bind.aiArt.setOnClickListener {
         bind.userIcon.setOnClickListener {
             val toGallery = Intent(this, Gallery::class.java)
             startActivity(toGallery)
+        }
+        bind.button2.setOnClickListener {
+            val goTopPro = Intent(this, pro_screen::class.java)
+            startActivity(goTopPro)
         }
 
         lifecycleScope.launch {
@@ -333,8 +332,16 @@ bind.aiArt.setOnClickListener {
                             startActivity(choseStyleIntent)
 
                         } else {
-                            Toast.makeText(this, "Change photo", Toast.LENGTH_SHORT).show()
-                            startActivityForResult(chosePhoto, REQUEST_IMAGE_PICK)
+                            val dialog = Dialog(this)
+                            dialog.setContentView(R.layout.alert_change_photo)
+
+                            val Ok = dialog.findViewById<TextView>(R.id.Ok)
+                            Ok.setOnClickListener {
+                                startActivityForResult(chosePhoto, REQUEST_IMAGE_PICK)
+                                dialog.dismiss()
+                            }
+
+                            dialog.show()
 
                         }
                     }

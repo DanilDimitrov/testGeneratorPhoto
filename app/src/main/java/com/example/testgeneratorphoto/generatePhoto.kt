@@ -59,6 +59,7 @@ class generatePhoto : AppCompatActivity() {
     var urlFileUploader: String = ""
 
 
+
     val handler = Handler(Looper.getMainLooper())
     val apiKey = "Bearer api-f1c9b6f96dce11eea95ce67244d2bd83"
     var fileValue: String = ""
@@ -119,6 +120,8 @@ class generatePhoto : AppCompatActivity() {
 
         val styleinjson = intent.getStringExtra("promptModel")
         val color = intent.getStringExtra("color")
+        val savedToGallery = intent.getBooleanExtra("savedToGallery", false)
+
 
         val selectedImageUri = intent.getParcelableExtra<Uri>("selectedImageUri")
         val type = object : TypeToken<List<Model>>() {}.type
@@ -216,29 +219,33 @@ class generatePhoto : AppCompatActivity() {
                     Log.i("URL", imageUrl)
 
                     if (isUserGallery) {
-                        uploadFromUrl(imageUrl) {url ->
+                        if(savedToGallery == true) {
+                            uploadFromUrl(imageUrl) { url ->
 
 
-                            val uid = user?.uid
-                            val db = FirebaseFirestore.getInstance()
-                            val documentReference = db.collection("Users").document(uid!!)
+                                val uid = user?.uid
+                                val db = FirebaseFirestore.getInstance()
+                                val documentReference = db.collection("Users").document(uid!!)
 
-                            documentReference.update(
-                                "imagesUrls",
-                                FieldValue.arrayUnion(url)
-                            )
-                                .addOnSuccessListener {
-                                    Log.i("imagesUrls", url)
-                                }
-                                .addOnFailureListener {
+                                documentReference.update(
+                                    "imagesUrls",
+                                    FieldValue.arrayUnion(url)
+                                )
+                                    .addOnSuccessListener {
+                                        Log.i("imagesUrls", url)
+                                    }
+                                    .addOnFailureListener {
 
-                                }
+                                    }
 
+                            }
                         }
                     }
                     val intentPhoto_Activity = Intent(this@generatePhoto, Photo_Activity::class.java)
                     intentPhoto_Activity.putExtra("imageUrl", imageUrl)
                     intentPhoto_Activity.putExtra("styleName", prompt.styleName)
+                    intentPhoto_Activity.putExtra("isUserGallery", isUserGallery)
+
                     if(imageUrl == "break"){
                         startActivity(toHome)
                         finish()

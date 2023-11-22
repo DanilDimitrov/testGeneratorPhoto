@@ -1,12 +1,14 @@
 package com.example.testgeneratorphoto
 
 import Manage
+import android.app.Dialog
 import android.content.Intent
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
+import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.GridLayoutManager
 import com.example.testgeneratorphoto.databinding.ActivitySeeAllStylesBinding
@@ -119,8 +121,16 @@ class seeAllStyles : AppCompatActivity() {
                             startActivity(choseStyleIntent)
 
                         } else {
-                            Toast.makeText(this, "Change photo", Toast.LENGTH_SHORT).show()
-                            startActivityForResult(chosePhoto, 1)
+                            val dialog = Dialog(this)
+                            dialog.setContentView(R.layout.alert_change_photo)
+
+                            val Ok = dialog.findViewById<TextView>(R.id.Ok)
+                            Ok.setOnClickListener {
+                                startActivityForResult(chosePhoto, 1)
+                                dialog.dismiss()
+                            }
+
+                            dialog.show()
 
                         }
                     }

@@ -17,8 +17,12 @@ import org.json.JSONObject
 import com.google.firebase.auth.FirebaseAuth
 import android.Manifest
 import android.app.AlertDialog
+import android.app.Dialog
 import android.content.pm.PackageManager
 import android.os.Build
+import android.view.LayoutInflater
+import android.widget.ImageView
+import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -130,6 +134,20 @@ class MainActivity : AppCompatActivity() {
         val gson = Gson()
         loadAd()
         auth = Firebase.auth
+
+        val dialog = Dialog(this)
+        dialog.setContentView(R.layout.alert_privacy_policy_on_continue)
+
+        val textView40 = dialog.findViewById<TextView>(R.id.textView40)
+        textView40.setOnClickListener {
+
+            // Закрыть диалоговое окно после нажатия
+            dialog.dismiss()
+        }
+
+// Показать Dialog
+        dialog.show()
+
         MobileAds.initialize(this){}
         val prompt = intent.getStringExtra("promptFromSeeAll")
         if (prompt != null){
@@ -247,12 +265,28 @@ bind.aiSelfies.setOnClickListener{
             checkCameraPermission()
 
             if(bind.editTextText.text.isEmpty()){
-                Toast.makeText(this, "Your prompt is empty", Toast.LENGTH_SHORT).show()
-            }
-            else if (sizeForGeneration == ""){ Toast.makeText(this, "Please chose size for art", Toast.LENGTH_SHORT).show() }
-            else if(promptForArt == null){ Toast.makeText(this, "Please chose style for art", Toast.LENGTH_SHORT).show()
+                val dialog = Dialog(this)
+                dialog.setContentView(R.layout.alert_art_promt)
 
-                if(sizeForGeneration=="1:1"){
+                val Ok = dialog.findViewById<TextView>(R.id.Ok)
+                Ok.setOnClickListener {
+                    dialog.dismiss()
+                }
+
+                dialog.show()
+            } else if (sizeForGeneration == "" || promptForArt == null) {
+                val dialog = Dialog(this)
+                dialog.setContentView(R.layout.alert_art)
+
+                val Ok = dialog.findViewById<TextView>(R.id.Ok)
+                Ok.setOnClickListener {
+                    dialog.dismiss()
+                }
+
+                dialog.show()
+
+
+            if(sizeForGeneration=="1:1"){
                     width = 512
                     height = 512
                 }else if(sizeForGeneration=="3:4"){
@@ -276,11 +310,23 @@ bind.aiSelfies.setOnClickListener{
 
         bind.generateSelect.setOnClickListener {
             if (bind.editTextText.text.isEmpty()) {
-                Toast.makeText(this, "Your prompt is empty", Toast.LENGTH_SHORT).show()
-            } else if (sizeForGeneration == "") {
-                Toast.makeText(this, "Please chose size for art", Toast.LENGTH_SHORT).show()
-            } else if (promptForArt == null) {
-                Toast.makeText(this, "Please chose style for art", Toast.LENGTH_SHORT).show()
+                val dialog = Dialog(this)
+                dialog.setContentView(R.layout.alert_art_promt)
+
+                val Ok = dialog.findViewById<TextView>(R.id.Ok)
+                Ok.setOnClickListener {
+                    dialog.dismiss()
+                }
+            } else if (sizeForGeneration == "" || promptForArt == null) {
+                val dialog = Dialog(this)
+                dialog.setContentView(R.layout.alert_art)
+
+                val Ok = dialog.findViewById<TextView>(R.id.Ok)
+                Ok.setOnClickListener {
+                    dialog.dismiss()
+                }
+
+                dialog.show()
             } else {
                 // Проверка количества доступных монеток
                 val currentUser = auth.currentUser
@@ -365,24 +411,27 @@ bind.aiSelfies.setOnClickListener{
                                 }
                             } else {
 
-                                    val alertDialogBuilder = AlertDialog.Builder(this)
-                                    alertDialogBuilder.setTitle("Нет монеток")
-                                    alertDialogBuilder.setMessage("У вас нет монеток. Получите монетки, просмотрев рекламу или подписавшись.")
-                                    alertDialogBuilder.setPositiveButton("AD") { dialogInterface, _ ->
-                                   Log.i("ad", "print ad")
-                                        rewardedAd?.show(this){rewardItem ->
-                                            Log.i("ad", "print ad")
-                                       rewardItem.amount
-                                            lifecycleScope.launch {
-                                                val translatedText =
-                                                    manage.translator(
-                                                        bind.editTextText.text.toString(),
-                                                        "uk"
-                                                    )
-                                                Log.i("translatedText", translatedText)
+                                val dialog = Dialog(this)
+                                dialog.setContentView(R.layout.alert_ads_or_pro)
 
-                                                // Создание JSON-объекта
-                                                val jsonForRequest = """
+                                val FreeByAds = dialog.findViewById<TextView>(R.id.FreeByAds)
+                                val Pro = dialog.findViewById<ImageView>(R.id.pro)
+
+                                FreeByAds.setOnClickListener {
+                                    Log.i("ad", "print ad")
+                                    rewardedAd?.show(this) { rewardItem ->
+                                        Log.i("ad", "print ad")
+                                        rewardItem.amount
+                                        lifecycleScope.launch {
+                                            val translatedText =
+                                                manage.translator(
+                                                    bind.editTextText.text.toString(),
+                                                    "uk"
+                                                )
+                                            Log.i("translatedText", translatedText)
+
+                                            // Создание JSON-объекта
+                                            val jsonForRequest = """
                                 {
                                     "model_id": "${promptForArt?.model_id}",
                                     "prompt": "$translatedText ${promptForArt?.prompt}",
@@ -396,35 +445,35 @@ bind.aiSelfies.setOnClickListener{
                                     "lora_strength": ${promptForArt?.lora_strength}
                                 }
                             """.trimIndent()
-                                                Log.i("jsonForRequest", jsonForRequest)
-                                                val generateArtIntent = Intent(
-                                                    this@MainActivity,
-                                                    generateArtProcess::class.java
-                                                )
-                                                generateArtIntent.putExtra(
-                                                    "jsonForRequest",
-                                                    jsonForRequest
-                                                )
-                                                generateArtIntent.putExtra(
-                                                    "styleName",
-                                                    promptForArt?.styleName.toString()
-                                                )
-                                                startActivity(generateArtIntent)
-                                            }
-                                   }
-                                        dialogInterface.dismiss()
+                                            Log.i("jsonForRequest", jsonForRequest)
+                                            val generateArtIntent = Intent(
+                                                this@MainActivity,
+                                                generateArtProcess::class.java
+                                            )
+                                            generateArtIntent.putExtra(
+                                                "jsonForRequest",
+                                                jsonForRequest
+                                            )
+                                            generateArtIntent.putExtra(
+                                                "styleName",
+                                                promptForArt?.styleName.toString()
+                                            )
+                                            startActivity(generateArtIntent)
+                                        }
                                     }
-                                    alertDialogBuilder.setNegativeButton("Pro") { dialogInterface, _ ->
-                                        val toPro = Intent(this, pro_screen::class.java)
-                                        startActivity(toPro)
-                                        dialogInterface.dismiss()
-                                    }
+                                    dialog.dismiss()
+                                }
 
-                                    val alertDialog: AlertDialog = alertDialogBuilder.create()
-                                    alertDialog.show()
+                                Pro.setOnClickListener {
+                                    val toPro = Intent(this, pro_screen::class.java)
+                                    startActivity(toPro)
+                                    dialog.dismiss()
+                                }
 
+                                dialog.show()
                             }
-                        }
+                            }
+
                         .addOnFailureListener {
                             Toast.makeText(this@MainActivity, "Failed to get user data.", Toast.LENGTH_SHORT).show()
                         }
@@ -606,6 +655,7 @@ bind.aiSelfies.setOnClickListener{
                             bind.imageView5.visibility = View.VISIBLE
                             bind.textView16.visibility = View.VISIBLE
                             bind.textView16.text = txt2img.toString()
+                            bind.textView16.text = "∞"
                             isUserAccessGallery = true
                         }
                         else {bind.button4.visibility = View.VISIBLE
@@ -615,7 +665,9 @@ bind.aiSelfies.setOnClickListener{
                         // Документ не существует, выполняем запись данных
                         val userData = hashMapOf(
                             "isUserPaid" to false,
+                            "isUserAccessGallery" to false,
                             "numberOfTxt2Img" to 5,
+                            "imagesUrls" to arrayListOf<String>(),
                             "numberOfImg2Img" to 1,
                             "uuid" to uid
                         )

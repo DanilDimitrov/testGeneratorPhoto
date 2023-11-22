@@ -2,6 +2,7 @@ package com.example.testgeneratorphoto
 
 import android.Manifest
 import android.app.Activity
+import android.app.Dialog
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -12,6 +13,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -91,9 +93,14 @@ class aiSelfiies : AppCompatActivity() {
             val photoFile: File = createImageFile()
             photoFile.let {
 
+                val outputStream = FileOutputStream(photoFile)
+                imageBitmap?.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+                outputStream.flush()
+                outputStream.close()
+
                 val imageUri = Uri.fromFile(it)
 
-                val image: InputImage = InputImage.fromFilePath(this, imageUri)
+                val image: InputImage = InputImage.fromBitmap(imageBitmap!!, 0)
 
                 val faceDetector: FaceDetector = FaceDetection.getClient()
 
@@ -106,8 +113,16 @@ class aiSelfiies : AppCompatActivity() {
                             startActivity(toResult)
                             finish()
                         }else{
-                            Toast.makeText(this, "Change Photo", Toast.LENGTH_SHORT).show()
-                            dispatchTakePictureIntent()
+                            val dialog = Dialog(this)
+                            dialog.setContentView(R.layout.alert_change_photo)
+
+                            val Ok = dialog.findViewById<TextView>(R.id.Ok)
+                            Ok.setOnClickListener {
+                                dispatchTakePictureIntent()
+                                dialog.dismiss()
+                            }
+
+                            dialog.show()
                         }
                     }
             }

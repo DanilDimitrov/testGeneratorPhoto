@@ -394,24 +394,50 @@ bind.aiArt.setOnClickListener {
                         }else{
                             bind.button2.visibility = View.VISIBLE
                         }
-                    } else {
-                        // Документ не существует, выполняем запись данных
-                        val userData = hashMapOf(
-                            "isUserPaid" to false,
-                            "numberOfTxt2Img" to 5,
-                            "numberOfImg2Img" to 1,
-                            "uuid" to uid
-                        )
+                    }
+                }
+                .addOnFailureListener {
+                    // Ошибка получения документа
+                    Log.e("USER INFORMATION", "Failed to get document")
+                }
+        }
+        else{
+            val uid = user!!.uid
+            val db = FirebaseFirestore.getInstance()
+            val userDoc = db.collection("Users").document(uid)
 
-                        userDoc.set(userData)
-                            .addOnSuccessListener {
-                                // Данные успешно записаны
-                                Log.i("USER INFORMATION", "Data written successfully")
-                            }
-                            .addOnFailureListener {
-                                // Ошибка записи данных
-                                Log.e("USER INFORMATION", "Failed to write data")
-                            }
+            // Проверяем, существует ли документ
+            userDoc.get()
+                .addOnSuccessListener { documentSnapshot ->
+                    if (documentSnapshot.exists()) {
+                        // Документ существует, не нужно ничего обновлять
+                        Log.i("USER INFORMATION", "Document already exists")
+                        val isUserPaid = documentSnapshot.getBoolean("isUserPaid") ?: false
+                        val img2img = documentSnapshot.get("numberOfImg2Img").toString()
+                        val isUserAccessGallery = documentSnapshot.getBoolean("isUserAccessGallery") ?: false
+                        Log.i("isUserAccessGallery", isUserAccessGallery.toString())
+
+                        Log.i("USER INFORMATION", "isUserPaid: $isUserPaid")
+
+                        // В зависимости от значения isUserPaid, выводим соответствующее сообщение
+                        if (isUserPaid) {
+                            Log.i("USER INFORMATION", "The user is paid.")
+                            bind.imageView4.visibility = View.VISIBLE
+                            bind.textView3.visibility = View.VISIBLE
+                            bind.textView3.text = img2img
+
+                        }else {
+                            Log.i("USER INFORMATION", "The user is not paid.")
+                            bind.imageView4.visibility = View.INVISIBLE
+                            bind.textView3.visibility = View.INVISIBLE
+                        }
+
+                        if (isUserAccessGallery){
+                            Log.i("USER INFORMATION", "The user is paid.")
+                            bind.button2.visibility = View.INVISIBLE
+                        }else{
+                            bind.button2.visibility = View.VISIBLE
+                        }
                     }
                 }
                 .addOnFailureListener {

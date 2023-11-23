@@ -3,6 +3,7 @@ package com.example.testgeneratorphoto
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.RadioButton
 import android.widget.Toast
 import com.example.testgeneratorphoto.databinding.ActivityProScreenBinding
@@ -49,9 +50,39 @@ class pro_screen : AppCompatActivity() {
         bind.imageButton5.setOnClickListener {
             onBackPressed()
         }
+        bind.textView22.setOnClickListener {
+            bind.purchase.visibility = View.VISIBLE
+        }
+        bind.imageButton2.setOnClickListener {
+            bind.purchase.visibility = View.INVISIBLE
+        }
+
+        bind.radioButton.setOnCheckedChangeListener { _, isChecked ->
+            handleRadioButtonStateForPurchase(bind.radioButton, isChecked)
+        }
+        bind.radioButton2.setOnCheckedChangeListener { _, isChecked ->
+            handleRadioButtonStateForPurchase(bind.radioButton2, isChecked)
+        }
+        bind.radioButton3.setOnCheckedChangeListener { _, isChecked ->
+            handleRadioButtonStateForPurchase(bind.radioButton3, isChecked)
+        }
     }
 
-
+    private fun handleRadioButtonStateForPurchase(radioButton: RadioButton, isChecked: Boolean) {
+        if (isChecked) {
+            radioButton.setBackgroundResource(R.drawable.radio_back_select)
+            selectedRadioButton?.let {
+                it.isChecked = false
+                it.setBackgroundResource(R.drawable.unselect)
+            }
+            selectedRadioButton = radioButton
+        } else {
+            radioButton.setBackgroundResource(R.drawable.unselect)
+            if (selectedRadioButton == radioButton) {
+                selectedRadioButton = null
+            }
+        }
+    }
     private fun handleRadioButtonState(radioButton: RadioButton, isChecked: Boolean) {
         if (isChecked) {
             radioButton.setBackgroundResource(R.drawable.radio_back_select)

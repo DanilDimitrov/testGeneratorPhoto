@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import com.example.testgeneratorphoto.databinding.ActivityPropertiesBinding
+import kotlin.math.sign
 
 class properties : AppCompatActivity() {
     lateinit var bind: ActivityPropertiesBinding
@@ -19,7 +20,8 @@ class properties : AppCompatActivity() {
         }
         // Account
         bind.cardView9.setOnClickListener {
-            // login
+            val toLogin = Intent(this, signUp::class.java)
+            startActivity(toLogin)
         }
         bind.cardView10.setOnClickListener {
             // notification

@@ -10,7 +10,6 @@
         tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-
     <uses-permission android:name="com.miui.gallery.permission.USE_INTERNAL_PROVIDER" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -43,6 +42,15 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TestGeneratorPhoto"
         tools:targetApi="33">
+        <activity
+            android:name=".login"
+            android:exported="false" />
+        <activity
+            android:name=".emailSignUp"
+            android:exported="false" />
+        <activity
+            android:name=".signUp"
+            android:exported="false" />
         <activity
             android:name=".properties"
             android:exported="false" />

@@ -133,7 +133,7 @@ class MainActivity : AppCompatActivity() {
         // AUTH
         val gson = Gson()
         loadAd()
-        auth = Firebase.auth
+        auth = FirebaseAuth.getInstance()
 
         val dialog = Dialog(this)
         dialog.setContentView(R.layout.alert_privacy_policy_on_continue)
@@ -580,8 +580,13 @@ bind.aiSelfies.setOnClickListener{
 
     public override fun onStart() {
         super.onStart()
-
-        signInAnonymously()
+        Log.e("auth.currentUser", auth.currentUser.toString())
+        if (auth.currentUser == null) {
+            signInAnonymously()
+        }
+        else{
+            updateUI(auth.currentUser)
+        }
         loadAd()
         Log.i("ad", "loaded")
 
@@ -597,16 +602,13 @@ bind.aiSelfies.setOnClickListener{
 
 
     private fun signInAnonymously() {
-        // [START signin_anonymously]
         auth.signInAnonymously()
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
-                    // Sign in success, update UI with the signed-in user's information
                     Log.d("TAG", "signInAnonymously:success")
                     val user = auth.currentUser
                     updateUI(user)
                 } else {
-                    // If sign in fails, display a message to the user.
                     Log.w("TAG", "signInAnonymously:failure", task.exception)
                     Toast.makeText(
                         baseContext,
@@ -616,7 +618,6 @@ bind.aiSelfies.setOnClickListener{
                     updateUI(null)
                 }
             }
-        // [END signin_anonymously]
     }
     private fun updateUI(user: FirebaseUser?) {
         Log.i("USER INFORMATION", user?.isAnonymous.toString())
@@ -681,6 +682,53 @@ bind.aiSelfies.setOnClickListener{
                                 // Ошибка записи данных
                                 Log.e("USER INFORMATION", "Failed to write data")
                             }
+                    }
+                }
+                .addOnFailureListener {
+                    // Ошибка получения документа
+                    Log.e("USER INFORMATION", "Failed to get document")
+                }
+        }
+        else{
+            val uid = user?.uid
+            val db = FirebaseFirestore.getInstance()
+            val userDoc = db.collection("Users").document(uid!!)
+
+            // Проверяем, существует ли документ
+            userDoc.get()
+                .addOnSuccessListener { documentSnapshot ->
+                    if (documentSnapshot.exists()) {
+                        // Документ существует, не нужно ничего обновлять
+                        Log.i("USER INFORMATION", "Document already exists")
+                        val isUserPaid = documentSnapshot.getBoolean("isUserPaid") ?: false
+                        val txt2img = documentSnapshot.get("numberOfTxt2Img")
+                        isUserAccessGallery = documentSnapshot.getBoolean("isUserAccessGallery") ?: false
+
+                        Log.i("USER INFORMATION", "isUserPaid: $isUserPaid")
+
+                        // В зависимости от значения isUserPaid, выводим соответствующее сообщение
+                        if (isUserPaid) {
+                            Log.i("USER INFORMATION", "The user is paid.")
+                            bind.imageView5.visibility = View.VISIBLE
+                            bind.textView16.visibility = View.VISIBLE
+                            bind.textView16.text = txt2img.toString()
+
+                        } else {
+                            Log.i("USER INFORMATION", "The user is not paid.")
+                            bind.imageView5.visibility = View.INVISIBLE
+                            bind.textView16.visibility = View.INVISIBLE
+                        }
+                        if(isUserAccessGallery){
+                            bind.button4.visibility = View.INVISIBLE
+                            bind.imageView5.visibility = View.VISIBLE
+                            bind.textView16.visibility = View.VISIBLE
+                            bind.textView16.text = txt2img.toString()
+                            bind.textView16.text = "∞"
+                            isUserAccessGallery = true
+                        }
+                        else {bind.button4.visibility = View.VISIBLE
+                            isUserAccessGallery = false}
+
                     }
                 }
                 .addOnFailureListener {

@@ -12,7 +12,20 @@
           "package_name": "com.example.testgeneratorphoto"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "155712490881-vrktji54pfg8qa0gj8cii22bs12ofdpe.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.testgeneratorphoto",
+            "certificate_hash": "68bc5638496e65156d8de18165add15e3b6366de"
+          }
+        },
+        {
+          "client_id": "155712490881-lfdc04hq7r9qcslt5661e29265t34o5r.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBnNF9bhamWc_t3uysBqJSNdaZBNZL5Vms"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "155712490881-lfdc04hq7r9qcslt5661e29265t34o5r.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "155712490881-pt7ifv545mkbjtsetr9n1ulj3pn37uo7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "kinzerskiy.AISpace"
+              }
+            }
+          ]
         }
       }
     }

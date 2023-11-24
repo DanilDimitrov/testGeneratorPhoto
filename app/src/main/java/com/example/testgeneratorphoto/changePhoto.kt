@@ -370,6 +370,8 @@ bind.aiArt.setOnClickListener {
                         Log.i("USER INFORMATION", "Document already exists")
                         val isUserPaid = documentSnapshot.getBoolean("isUserPaid") ?: false
                         val img2img = documentSnapshot.get("numberOfImg2Img").toString()
+                        val buyCoins = documentSnapshot.get("buyCoins").toString()
+
                         val isUserAccessGallery = documentSnapshot.getBoolean("isUserAccessGallery") ?: false
                         Log.i("isUserAccessGallery", isUserAccessGallery.toString())
 
@@ -380,7 +382,7 @@ bind.aiArt.setOnClickListener {
                             Log.i("USER INFORMATION", "The user is paid.")
                             bind.imageView4.visibility = View.VISIBLE
                             bind.textView3.visibility = View.VISIBLE
-                            bind.textView3.text = img2img
+                            bind.textView3.text = buyCoins
 
                         }else {
                             Log.i("USER INFORMATION", "The user is not paid.")
@@ -391,8 +393,11 @@ bind.aiArt.setOnClickListener {
                         if (isUserAccessGallery){
                             Log.i("USER INFORMATION", "The user is paid.")
                             bind.button2.visibility = View.INVISIBLE
+                            bind.textView3.visibility = View.VISIBLE
+                            bind.textView3.text = buyCoins
                         }else{
                             bind.button2.visibility = View.VISIBLE
+                            bind.textView3.visibility = View.INVISIBLE
                         }
                     }
                 }
@@ -414,6 +419,8 @@ bind.aiArt.setOnClickListener {
                         Log.i("USER INFORMATION", "Document already exists")
                         val isUserPaid = documentSnapshot.getBoolean("isUserPaid") ?: false
                         val img2img = documentSnapshot.get("numberOfImg2Img").toString()
+                        val buyCoins = documentSnapshot.get("buyCoins").toString()
+
                         val isUserAccessGallery = documentSnapshot.getBoolean("isUserAccessGallery") ?: false
                         Log.i("isUserAccessGallery", isUserAccessGallery.toString())
 
@@ -424,7 +431,7 @@ bind.aiArt.setOnClickListener {
                             Log.i("USER INFORMATION", "The user is paid.")
                             bind.imageView4.visibility = View.VISIBLE
                             bind.textView3.visibility = View.VISIBLE
-                            bind.textView3.text = img2img
+                            bind.textView3.text = buyCoins
 
                         }else {
                             Log.i("USER INFORMATION", "The user is not paid.")
@@ -435,8 +442,12 @@ bind.aiArt.setOnClickListener {
                         if (isUserAccessGallery){
                             Log.i("USER INFORMATION", "The user is paid.")
                             bind.button2.visibility = View.INVISIBLE
+                            bind.imageView4.visibility = View.VISIBLE
+                            bind.textView3.visibility = View.VISIBLE
+                            bind.textView3.text = buyCoins
                         }else{
                             bind.button2.visibility = View.VISIBLE
+
                         }
                     }
                 }

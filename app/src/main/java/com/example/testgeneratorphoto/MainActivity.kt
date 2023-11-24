@@ -36,6 +36,7 @@ import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -336,7 +337,10 @@ bind.aiSelfies.setOnClickListener{
                     userDoc.get()
                         .addOnSuccessListener { documentSnapshot ->
                             val numberOfTxt2Img = documentSnapshot.getLong("numberOfTxt2Img")
-                            if (numberOfTxt2Img != null && numberOfTxt2Img > 0) {
+                            val buyCoins = documentSnapshot.getLong("buyCoins")
+                            val isPaid = documentSnapshot.getBoolean("isUserPaid")
+
+                            if ((numberOfTxt2Img != null && buyCoins != null) && (numberOfTxt2Img > 0 || buyCoins > 0) ) {
                                 // Перевод текста
                                 lifecycleScope.launch {
                                     val translatedText =
@@ -382,30 +386,58 @@ bind.aiSelfies.setOnClickListener{
                                             )
                                             startActivity(generateArtIntent)
                                         } else {
-                                            // Уменьшение количества монеток в Firestore
-                                            userDoc.update("numberOfTxt2Img", numberOfTxt2Img - 1)
-                                                .addOnSuccessListener {
-                                                    val generateArtIntent = Intent(
-                                                        this@MainActivity,
-                                                        generateArtProcess::class.java
-                                                    )
-                                                    generateArtIntent.putExtra(
-                                                        "jsonForRequest",
-                                                        jsonForRequest
-                                                    )
-                                                    generateArtIntent.putExtra(
-                                                        "styleName",
-                                                        promptForArt?.styleName.toString()
-                                                    )
-                                                    startActivity(generateArtIntent)
-                                                }
-                                                .addOnFailureListener {
-                                                    Toast.makeText(
-                                                        this@MainActivity,
-                                                        "Failed to update coins.",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
+                                            if (isPaid == false){
+                                                // Уменьшение количества монеток в Firestore
+                                                userDoc.update("numberOfTxt2Img", numberOfTxt2Img - 1)
+                                                    .addOnSuccessListener {
+                                                        val generateArtIntent = Intent(
+                                                            this@MainActivity,
+                                                            generateArtProcess::class.java
+                                                        )
+                                                        generateArtIntent.putExtra(
+                                                            "jsonForRequest",
+                                                            jsonForRequest
+                                                        )
+                                                        generateArtIntent.putExtra(
+                                                            "styleName",
+                                                            promptForArt?.styleName.toString()
+                                                        )
+                                                        startActivity(generateArtIntent)
+                                                    }
+                                                    .addOnFailureListener {
+                                                        Toast.makeText(
+                                                            this@MainActivity,
+                                                            "Failed to update coins.",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    }
+                                            }
+                                            else{
+                                                userDoc.update("buyCoins", buyCoins - 1)
+                                                    .addOnSuccessListener {
+                                                        val generateArtIntent = Intent(
+                                                            this@MainActivity,
+                                                            generateArtProcess::class.java
+                                                        )
+                                                        generateArtIntent.putExtra(
+                                                            "jsonForRequest",
+                                                            jsonForRequest
+                                                        )
+                                                        generateArtIntent.putExtra(
+                                                            "styleName",
+                                                            promptForArt?.styleName.toString()
+                                                        )
+                                                        startActivity(generateArtIntent)
+                                                    }
+                                                    .addOnFailureListener {
+                                                        Toast.makeText(
+                                                            this@MainActivity,
+                                                            "Failed to update coins.",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    }
+                                            }
+
                                         }
                                     }
                                 }
@@ -621,11 +653,12 @@ bind.aiSelfies.setOnClickListener{
     }
     private fun updateUI(user: FirebaseUser?) {
         Log.i("USER INFORMATION", user?.isAnonymous.toString())
+        val uid = user!!.uid
+        val db = FirebaseFirestore.getInstance()
+        val userDoc = db.collection("Users").document(uid)
 
-        if (user?.isAnonymous == true) {
-            val uid = user.uid
-            val db = FirebaseFirestore.getInstance()
-            val userDoc = db.collection("Users").document(uid)
+        if (user.isAnonymous == true) {
+
 
             // Проверяем, существует ли документ
             userDoc.get()
@@ -635,6 +668,20 @@ bind.aiSelfies.setOnClickListener{
                         Log.i("USER INFORMATION", "Document already exists")
                         val isUserPaid = documentSnapshot.getBoolean("isUserPaid") ?: false
                         val txt2img = documentSnapshot.get("numberOfTxt2Img")
+                        val buyCoins = documentSnapshot.get("buyCoins")
+                        val time = documentSnapshot.getTimestamp("time")
+                        val currentTime = Timestamp.now()
+
+                        if (time != null && time.seconds < currentTime.seconds) {
+                            userDoc.update("isUserAccessGallery", false)
+                                .addOnSuccessListener {
+                                    Log.i("USER INFORMATION", "Data written successfully")
+                                }
+                                .addOnFailureListener {
+                                    Log.e("USER INFORMATION", "Failed to write data")
+                                }
+                        }
+
                         isUserAccessGallery = documentSnapshot.getBoolean("isUserAccessGallery") ?: false
 
                         Log.i("USER INFORMATION", "isUserPaid: $isUserPaid")
@@ -644,7 +691,7 @@ bind.aiSelfies.setOnClickListener{
                             Log.i("USER INFORMATION", "The user is paid.")
                             bind.imageView5.visibility = View.VISIBLE
                             bind.textView16.visibility = View.VISIBLE
-                            bind.textView16.text = txt2img.toString()
+                            bind.textView16.text = buyCoins.toString()
 
                         } else {
                             Log.i("USER INFORMATION", "The user is not paid.")
@@ -655,9 +702,10 @@ bind.aiSelfies.setOnClickListener{
                             bind.button4.visibility = View.INVISIBLE
                             bind.imageView5.visibility = View.VISIBLE
                             bind.textView16.visibility = View.VISIBLE
-                            bind.textView16.text = txt2img.toString()
+                            bind.textView16.text = buyCoins.toString()
                             bind.textView16.text = "∞"
-                            isUserAccessGallery = true
+
+
                         }
                         else {bind.button4.visibility = View.VISIBLE
                             isUserAccessGallery = false}
@@ -668,8 +716,10 @@ bind.aiSelfies.setOnClickListener{
                             "isUserPaid" to false,
                             "isUserAccessGallery" to false,
                             "numberOfTxt2Img" to 5,
+                            "buyCoins" to 0,
                             "imagesUrls" to arrayListOf<String>(),
                             "numberOfImg2Img" to 1,
+                            "time" to Timestamp.now(),
                             "uuid" to uid
                         )
 
@@ -690,10 +740,6 @@ bind.aiSelfies.setOnClickListener{
                 }
         }
         else{
-            val uid = user?.uid
-            val db = FirebaseFirestore.getInstance()
-            val userDoc = db.collection("Users").document(uid!!)
-
             // Проверяем, существует ли документ
             userDoc.get()
                 .addOnSuccessListener { documentSnapshot ->
@@ -702,6 +748,20 @@ bind.aiSelfies.setOnClickListener{
                         Log.i("USER INFORMATION", "Document already exists")
                         val isUserPaid = documentSnapshot.getBoolean("isUserPaid") ?: false
                         val txt2img = documentSnapshot.get("numberOfTxt2Img")
+                        val buyCoins = documentSnapshot.get("buyCoins")
+                        val time = documentSnapshot.getTimestamp("time")
+                        val currentTime = Timestamp.now()
+
+                        if (time != null && time.seconds < currentTime.seconds) {
+                            userDoc.update("isUserAccessGallery", false)
+                                .addOnSuccessListener {
+                                    Log.i("USER INFORMATION", "Data written successfully")
+                                }
+                                .addOnFailureListener {
+                                    Log.e("USER INFORMATION", "Failed to write data")
+                                }
+                        }
+
                         isUserAccessGallery = documentSnapshot.getBoolean("isUserAccessGallery") ?: false
 
                         Log.i("USER INFORMATION", "isUserPaid: $isUserPaid")
@@ -711,7 +771,7 @@ bind.aiSelfies.setOnClickListener{
                             Log.i("USER INFORMATION", "The user is paid.")
                             bind.imageView5.visibility = View.VISIBLE
                             bind.textView16.visibility = View.VISIBLE
-                            bind.textView16.text = txt2img.toString()
+                            bind.textView16.text = buyCoins.toString()
 
                         } else {
                             Log.i("USER INFORMATION", "The user is not paid.")
@@ -719,12 +779,13 @@ bind.aiSelfies.setOnClickListener{
                             bind.textView16.visibility = View.INVISIBLE
                         }
                         if(isUserAccessGallery){
+
                             bind.button4.visibility = View.INVISIBLE
                             bind.imageView5.visibility = View.VISIBLE
                             bind.textView16.visibility = View.VISIBLE
-                            bind.textView16.text = txt2img.toString()
+                            bind.textView16.text = buyCoins.toString()
                             bind.textView16.text = "∞"
-                            isUserAccessGallery = true
+
                         }
                         else {bind.button4.visibility = View.VISIBLE
                             isUserAccessGallery = false}

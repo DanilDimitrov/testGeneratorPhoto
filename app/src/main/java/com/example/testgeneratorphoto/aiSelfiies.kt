@@ -13,11 +13,17 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.testgeneratorphoto.databinding.ActivityAiSelfiiesBinding
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.ktx.Firebase
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
@@ -34,6 +40,8 @@ class aiSelfiies : AppCompatActivity() {
     val uiIntarface = UIIntreface()
     private val REQUEST_IMAGE_CAPTURE = 1
     private var currentPhotoPath: String? = null
+    lateinit var auth: FirebaseAuth
+
     @Throws(IOException::class)
     private fun createImageFile(): File {
         val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
@@ -59,6 +67,9 @@ class aiSelfiies : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         bind = ActivityAiSelfiiesBinding.inflate(layoutInflater)
         setContentView(bind.root)
+        auth = Firebase.auth
+        val user = auth.currentUser
+        updateUI(user)
 
         // UI
         bind.reImageAiSelfie.paint?.shader = uiIntarface.textApp(bind.reImageAiSelfie, "ReImage")
@@ -82,6 +93,11 @@ class aiSelfiies : AppCompatActivity() {
             } else {
                 dispatchTakePictureIntent()
             }
+        }
+
+        bind.button7.setOnClickListener {
+            val toPro = Intent(this, pro_screen::class.java)
+            startActivity(toPro)
         }
     }
 
@@ -162,6 +178,36 @@ class aiSelfiies : AppCompatActivity() {
                 checkCameraPermission()
             }
         }
+    }
+
+    private fun updateUI(user: FirebaseUser?) {
+        Log.i("USER INFORMATION", user?.isAnonymous.toString())
+        val uid = user!!.uid
+        val db = FirebaseFirestore.getInstance()
+        val userDoc = db.collection("Users").document(uid)
+
+        userDoc.get()
+            .addOnSuccessListener { documentSnapshot ->
+                Log.i("USER INFORMATION", "Document already exists")
+
+                val isUserAccessGallery = documentSnapshot.getBoolean("isUserAccessGallery") ?: false
+                val buyCoins = documentSnapshot.get("buyCoins").toString()
+                bind.textView16.text = buyCoins
+
+                if(isUserAccessGallery){
+                    bind.noPro.visibility = View.INVISIBLE
+                    bind.openCamera.isClickable = true
+                }else{
+                    bind.noPro.visibility = View.VISIBLE
+                    bind.openCamera.isClickable = false
+                }
+
+
+            }
+            .addOnFailureListener {
+                Log.e("USER INFORMATION", "Failed to get document")
+            }
+
     }
 
 

@@ -10,6 +10,7 @@ import android.view.View
 import android.widget.ImageButton
 import android.widget.TextView
 import com.example.testgeneratorphoto.databinding.ActivityChoseColorBinding
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
@@ -18,14 +19,17 @@ import com.google.gson.reflect.TypeToken
 
 class choseColor : AppCompatActivity() {
     lateinit var bind: ActivityChoseColorBinding
-
+lateinit var auth:FirebaseAuth
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         bind = ActivityChoseColorBinding.inflate(layoutInflater)
         setContentView(bind.root)
         val gson = Gson()
         var savedToGallery = false
-        val auth = Firebase.auth
+        auth = FirebaseAuth.getInstance()
+        auth = Firebase.auth
+
+
 
         val yourImageButton = findViewById<ImageButton>(R.id.imageButton3)
 
@@ -55,9 +59,18 @@ class choseColor : AppCompatActivity() {
                     .addOnSuccessListener { documentSnapshot ->
                         val numberOfImg2Img = documentSnapshot.getLong("numberOfImg2Img")
                         val isUserAccessGallery = documentSnapshot.getBoolean("isUserAccessGallery")
+                        val isUserPaid = documentSnapshot.getBoolean("isUserPaid")
+
+                        Log.i("isUserAccessGallery", isUserAccessGallery.toString())
+
+
                         val imageList = documentSnapshot.get("imagesUrls") as? ArrayList<String>
+                        val buyCoins = documentSnapshot.getLong("buyCoins")
+
 
                         if(isUserAccessGallery == true){
+                            savedToGallery = true
+
                             if(imageList!!.size == 10){
                                 savedToGallery = false
                                 val dialog = Dialog(this)
@@ -75,9 +88,79 @@ class choseColor : AppCompatActivity() {
 
                                 Ok.setOnClickListener {
                                     dialog.dismiss()
-                                    if (numberOfImg2Img != null && numberOfImg2Img > 0) {
+                                    if ((numberOfImg2Img != null && buyCoins != null) && (numberOfImg2Img > 0 || buyCoins > 0)) {
+                                        if(!isUserPaid!!){
+                                            // Уменьшить количество монеток
+                                            userDoc.update("numberOfImg2Img", numberOfImg2Img - 1)
+                                                .addOnSuccessListener {
+                                                    // Значение numberOfImg2Img уменьшено на 1
+                                                    Log.i("choseColor", "numberOfImg2Img decremented successfully.")
+                                                    toGenerateIntent.putExtra("selectedImageUri", selectedImageUri)
+                                                    toGenerateIntent.putExtra("savedToGallery", savedToGallery)
+                                                    toGenerateIntent.putExtra("color", color)
+                                                    toGenerateIntent.putExtra("promptModel", gson.toJson(prompt))
+                                                    Log.i("savedToGallery", savedToGallery.toString())
+
+                                                    startActivity(toGenerateIntent)
+                                                    finish()
+                                                }
+                                                .addOnFailureListener {
+                                                    Log.e("choseColor", "Failed to decrement numberOfImg2Img.")
+                                                }
+                                        }else{
+                                            // Уменьшить количество монеток
+                                            userDoc.update("buyCoins", buyCoins - 1)
+                                                .addOnSuccessListener {
+                                                    // Значение numberOfImg2Img уменьшено на 1
+                                                    Log.i("choseColor", "numberOfImg2Img decremented successfully.")
+                                                    toGenerateIntent.putExtra("selectedImageUri", selectedImageUri)
+                                                    toGenerateIntent.putExtra("savedToGallery", savedToGallery)
+                                                    toGenerateIntent.putExtra("color", color)
+                                                    toGenerateIntent.putExtra("promptModel", gson.toJson(prompt))
+                                                    startActivity(toGenerateIntent)
+                                                    finish()
+                                                }
+                                                .addOnFailureListener {
+                                                    Log.e("choseColor", "Failed to decrement numberOfImg2Img.")
+                                                }
+                                        }
+
+                                    } else {
+                                        Log.e("choseColor", "Not enough coins for numberOfImg2Img.")
+                                        toHome.putExtra("noCoins",true)
+                                        startActivity(toHome)
+                                        finish()
+                                    }
+                                }
+
+                                dialog.show()
+                            }
+                            else{
+                                savedToGallery = true
+                                if ((numberOfImg2Img != null && buyCoins != null) && (numberOfImg2Img > 0 || buyCoins > 0)) {
+                                    if(!isUserPaid!!) {
+
                                         // Уменьшить количество монеток
                                         userDoc.update("numberOfImg2Img", numberOfImg2Img - 1)
+                                            .addOnSuccessListener {
+                                                // Значение numberOfImg2Img уменьшено на 1
+                                                Log.i("choseColor", "numberOfImg2Img decremented successfully.")
+                                                toGenerateIntent.putExtra("selectedImageUri", selectedImageUri)
+                                                toGenerateIntent.putExtra("savedToGallery", savedToGallery)
+                                                toGenerateIntent.putExtra("color", color)
+                                                toGenerateIntent.putExtra("promptModel", gson.toJson(prompt))
+                                                Log.i("savedToGallery", savedToGallery.toString())
+
+                                                startActivity(toGenerateIntent)
+                                                finish()
+                                            }
+                                            .addOnFailureListener {
+                                                Log.e("choseColor", "Failed to decrement numberOfImg2Img.")
+                                            }
+                                    }else{
+
+                                        // Уменьшить количество монеток
+                                        userDoc.update("buyCoins", buyCoins - 1)
                                             .addOnSuccessListener {
                                                 // Значение numberOfImg2Img уменьшено на 1
                                                 Log.i("choseColor", "numberOfImg2Img decremented successfully.")
@@ -91,19 +174,20 @@ class choseColor : AppCompatActivity() {
                                             .addOnFailureListener {
                                                 Log.e("choseColor", "Failed to decrement numberOfImg2Img.")
                                             }
-                                    } else {
-                                        Log.e("choseColor", "Not enough coins for numberOfImg2Img.")
-                                        toHome.putExtra("noCoins",true)
-                                        startActivity(toHome)
-                                        finish()
                                     }
-                                }
 
-                                dialog.show()
+                                } else {
+                                    Log.e("choseColor", "Not enough coins for numberOfImg2Img.")
+                                    toHome.putExtra("noCoins",true)
+                                    startActivity(toHome)
+                                    finish()
+                                }
                             }
-                            else{
-                                savedToGallery = true
-                                if (numberOfImg2Img != null && numberOfImg2Img > 0) {
+                        }else {
+                            savedToGallery = false
+
+                            if ((numberOfImg2Img != null && buyCoins != null) && (numberOfImg2Img > 0 || buyCoins > 0)) {
+                                if(!isUserPaid!!) {
                                     // Уменьшить количество монеток
                                     userDoc.update("numberOfImg2Img", numberOfImg2Img - 1)
                                         .addOnSuccessListener {
@@ -119,44 +203,27 @@ class choseColor : AppCompatActivity() {
                                         .addOnFailureListener {
                                             Log.e("choseColor", "Failed to decrement numberOfImg2Img.")
                                         }
-                                } else {
-                                    Log.e("choseColor", "Not enough coins for numberOfImg2Img.")
-                                    toHome.putExtra("noCoins",true)
-                                    startActivity(toHome)
-                                    finish()
+                                }else{
+                                    // Уменьшить количество монеток
+                                    userDoc.update("buyCoins", buyCoins - 1)
+                                        .addOnSuccessListener {
+                                            // Значение numberOfImg2Img уменьшено на 1
+                                            Log.i("choseColor", "numberOfImg2Img decremented successfully.")
+                                            toGenerateIntent.putExtra("selectedImageUri", selectedImageUri)
+                                            toGenerateIntent.putExtra("savedToGallery", savedToGallery)
+                                            toGenerateIntent.putExtra("color", color)
+                                            toGenerateIntent.putExtra("promptModel", gson.toJson(prompt))
+                                            startActivity(toGenerateIntent)
+                                            finish()
+                                        }
+                                        .addOnFailureListener {
+                                            Log.e("choseColor", "Failed to decrement numberOfImg2Img.")
+                                        }
                                 }
-                            }
-                        }else {
-                            savedToGallery = false
 
-                            if (numberOfImg2Img != null && numberOfImg2Img > 0) {
-                                // Уменьшить количество монеток
-                                userDoc.update("numberOfImg2Img", numberOfImg2Img - 1)
-                                    .addOnSuccessListener {
-                                        // Значение numberOfImg2Img уменьшено на 1
-                                        Log.i(
-                                            "choseColor",
-                                            "numberOfImg2Img decremented successfully."
-                                        )
-                                        toGenerateIntent.putExtra(
-                                            "selectedImageUri",
-                                            selectedImageUri
-                                        )
-                                        toGenerateIntent.putExtra("savedToGallery", savedToGallery)
-                                        toGenerateIntent.putExtra("color", color)
-                                        toGenerateIntent.putExtra(
-                                            "promptModel",
-                                            gson.toJson(prompt)
-                                        )
-                                        startActivity(toGenerateIntent)
-                                        finish()
-                                    }
-                                    .addOnFailureListener {
-                                        Log.e("choseColor", "Failed to decrement numberOfImg2Img.")
-                                    }
                             } else {
                                 Log.e("choseColor", "Not enough coins for numberOfImg2Img.")
-                                toHome.putExtra("noCoins", true)
+                                toHome.putExtra("noCoins",true)
                                 startActivity(toHome)
                                 finish()
                             }

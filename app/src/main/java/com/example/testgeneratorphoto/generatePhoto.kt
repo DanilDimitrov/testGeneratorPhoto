@@ -377,8 +377,7 @@ class generatePhoto : AppCompatActivity() {
 
     private fun updateUI(user: FirebaseUser?) {
         Log.i("USER INFORMATION", user?.isAnonymous.toString())
-        if (user?.isAnonymous == true) {
-            val uid = user.uid
+            val uid = user!!.uid
             val db = FirebaseFirestore.getInstance()
             val userDoc = db.collection("Users").document(uid)
 
@@ -401,7 +400,7 @@ class generatePhoto : AppCompatActivity() {
                 .addOnFailureListener {
                     Log.e("USER INFORMATION", "Failed to get document")
                 }
-        }
+
     }
 
 }

@@ -83,7 +83,6 @@ class signUp : AppCompatActivity() {
     }
 
 
-    // Подальша обробка аутентифікації через Google
     private fun firebaseAuthWithGoogle(acct: GoogleSignInAccount) {
         val credential = GoogleAuthProvider.getCredential(acct.idToken, null)
         val currentUser = auth.currentUser
@@ -100,17 +99,18 @@ class signUp : AppCompatActivity() {
                             if (task.isSuccessful) {
                                 Log.d("TAG", "linkWithCredential:success")
                                 val linkedUser = task.result?.user
-                                // Оновлення інтерфейсу після об'єднання облікових записів
-                                // updateUI(linkedUser)
+
                             } else {
                                 Log.w("TAG", "linkWithCredential:failure", task.exception)
                             }
                         }
+
                 } else {
                     Log.d("TAG", "No such document")
                 }
             }
         }
+
     }
 
     companion object {

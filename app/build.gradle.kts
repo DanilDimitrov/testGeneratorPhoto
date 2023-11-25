@@ -55,9 +55,9 @@ dependencies {
     implementation("com.google.android.gms:play-services-auth:20.7.0")
     implementation("com.google.android.gms:play-services-wallet:19.2.1")
 
-    implementation("com.razorpay:checkout:1.6.26")
-
     implementation("com.google.firebase:firebase-database")
+    implementation("com.stripe:stripe-android:20.34.4")
+
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.android.material:material:1.10.0")
     implementation("com.squareup.picasso:picasso:2.71828")

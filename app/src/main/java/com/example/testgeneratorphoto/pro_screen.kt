@@ -176,26 +176,40 @@ class pro_screen : AppCompatActivity() {
             lateTime = 2
 
         }
+        fun checkUser(user: FirebaseUser?): Boolean{
+            if(user!!.isAnonymous){
+                Toast.makeText(this, "Please Log In or Sign Up", Toast.LENGTH_SHORT).show()
+                return false
+            }
+            else
+                return true
+        }
+
 
         bind.contine2.setOnClickListener {
-            if (buttonText == 0.0)
-                Toast.makeText(this, "Please choose your plan", Toast.LENGTH_SHORT).show()
-            else {
-                paymentType = PaymentType.PURCHASE
-                lifecycleScope.launch{
-                    presentPaymentSheet()
-                }
+            if(checkUser(user) == true) {
+                if (buttonText == 0.0)
+                    Toast.makeText(this, "Please choose your plan", Toast.LENGTH_SHORT).show()
+                else {
+                    paymentType = PaymentType.PURCHASE
+                    lifecycleScope.launch {
+                        presentPaymentSheet()
+                    }
 
+                }
             }
+
         }
 
         bind.contine.setOnClickListener {
-            if (buttonText == 0.0)
-                Toast.makeText(this, "Please choose your plan", Toast.LENGTH_SHORT).show()
-            else {
-                paymentType = PaymentType.PRO
-                lifecycleScope.launch{
-                    presentPaymentSheet()
+            if(checkUser(user) == true) {
+                if (buttonText == 0.0)
+                    Toast.makeText(this, "Please choose your plan", Toast.LENGTH_SHORT).show()
+                else {
+                    paymentType = PaymentType.PRO
+                    lifecycleScope.launch {
+                        presentPaymentSheet()
+                    }
                 }
             }
         }

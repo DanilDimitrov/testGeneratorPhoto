@@ -40,12 +40,14 @@ class signUp : AppCompatActivity() {
             finish()
         }
 
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+        val gso = GoogleSignInOptions.Builder(
+            GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken("155712490881-lfdc04hq7r9qcslt5661e29265t34o5r.apps.googleusercontent.com")
             .requestEmail()
             .build()
 
         val mGoogleSignInClient = GoogleSignIn.getClient(this, gso)
+
         auth = Firebase.auth
 
         bind.imageButton15.setOnClickListener {
@@ -56,13 +58,17 @@ class signUp : AppCompatActivity() {
 
         bind.imageButton12.setOnClickListener {
             Log.i("currentUser", currentUser.toString())
+            mGoogleSignInClient.signOut()
+
                 val signInIntent = mGoogleSignInClient.signInIntent
                 startActivityForResult(signInIntent, RC_SIGN_IN)
+
+
 
         }
 
         bind.textView50.setOnClickListener {
-            val tologin = Intent(this, login::class.java)
+            val tologin = Intent(this, loginPage::class.java)
             startActivity(tologin)
         }
     }
@@ -98,10 +104,17 @@ class signUp : AppCompatActivity() {
                         .addOnCompleteListener { task ->
                             if (task.isSuccessful) {
                                 Log.d("TAG", "linkWithCredential:success")
-                                val linkedUser = task.result?.user
+                                Toast.makeText(this, "Success", Toast.LENGTH_SHORT).show()
+                                val toHome = Intent(this, MainActivity::class.java)
+                                startActivity(toHome)
+                                finish()
 
                             } else {
                                 Log.w("TAG", "linkWithCredential:failure", task.exception)
+                                Toast.makeText(this, "Sign out of this account", Toast.LENGTH_SHORT).show()
+                                val toProperties = Intent(this, properties::class.java)
+                                startActivity(toProperties)
+                                finish()
                             }
                         }
 
@@ -116,4 +129,5 @@ class signUp : AppCompatActivity() {
     companion object {
         private const val RC_SIGN_IN = 9001
     }
+
 }

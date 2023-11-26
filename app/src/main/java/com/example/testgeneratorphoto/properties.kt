@@ -3,7 +3,9 @@ package com.example.testgeneratorphoto
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.widget.Toast
 import com.example.testgeneratorphoto.databinding.ActivityPropertiesBinding
+import com.google.firebase.auth.FirebaseAuth
 import kotlin.math.sign
 
 class properties : AppCompatActivity() {
@@ -30,7 +32,12 @@ class properties : AppCompatActivity() {
             // restore purchase
         }
         bind.singoutCard.setOnClickListener {
-            // sing Out
+            val auth = FirebaseAuth.getInstance()
+            auth.signOut()
+            Toast.makeText(this, "Success", Toast.LENGTH_SHORT).show()
+            val toHome = Intent(this, MainActivity::class.java)
+            startActivity(toHome)
+
         }
         // General
         bind.cardView13.setOnClickListener {
@@ -55,9 +62,7 @@ class properties : AppCompatActivity() {
         }
 
         bind.goToHome.setOnClickListener {
-            val toHome = Intent(this, Gallery::class.java)
-            startActivity(toHome)
-            finish()
+            onBackPressed()
         }
     }
 }

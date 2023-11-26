@@ -628,7 +628,13 @@ bind.aiSelfies.setOnClickListener{
         super.onResume()
         loadAd()
         Log.i("ad", "loaded")
+        auth = FirebaseAuth.getInstance()
+        Log.i("auth.currentUser", auth.currentUser.toString())
+        val user = auth.currentUser
 
+        if(auth.currentUser != null){
+            updateUI(auth.currentUser)
+        }
 
     }
 

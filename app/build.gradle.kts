@@ -54,6 +54,8 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.android.gms:play-services-auth:20.7.0")
     implementation("com.google.android.gms:play-services-wallet:19.2.1")
+    implementation("androidx.fragment:fragment-ktx:1.6.2")
+    implementation("androidx.core:core-splashscreen:1.0.0")
 
     implementation("com.google.firebase:firebase-database")
     implementation("com.stripe:stripe-android:20.34.4")

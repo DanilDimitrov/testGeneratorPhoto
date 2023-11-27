@@ -24,7 +24,15 @@ class generateArtProcess : AppCompatActivity() {
         val jsonForRequest = intent.getStringExtra("jsonForRequest").toString().trimIndent()
         val styleName = intent.getStringExtra("styleName")
         Log.i("styleName", styleName.toString())
-        bind.textView.text = "Тут будет видео"
+
+        val videoPath = "android.resource://" + packageName + "/" + R.raw.loading
+
+        bind.videoView.setVideoPath(videoPath)
+
+        bind.videoView.setOnCompletionListener {
+            bind.videoView.start()
+        }
+        bind.videoView.start()
         fun createImageWithRetry(json: String, apiUrl: String, callback: (String) -> Unit) {
 
             val apiKey = "a3dec967-0738-4529-a904-3693bf1c208f"

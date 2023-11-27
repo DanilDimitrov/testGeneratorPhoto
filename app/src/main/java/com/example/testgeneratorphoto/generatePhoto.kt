@@ -117,6 +117,14 @@ class generatePhoto : AppCompatActivity() {
         val user = auth.currentUser
         updateUI(user)
 
+        val videoPath = "android.resource://" + packageName + "/" + R.raw.loading
+
+        bind.videoView3.setVideoPath(videoPath)
+
+        bind.videoView3.setOnCompletionListener {
+            bind.videoView3.start()
+        }
+        bind.videoView3.start()
 
         val styleinjson = intent.getStringExtra("promptModel")
         val color = intent.getStringExtra("color")

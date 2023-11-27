@@ -27,14 +27,10 @@ class Gallery : AppCompatActivity() {
         updateUI(user)
 
         bind.button6.setOnClickListener {
-            val toPro = Intent(this, pro_screen::class.java)
-            startActivity(toPro)
-            finish()
+            onBackPressed()
         }
         bind.imageButton11.setOnClickListener {
-            val toHome = Intent(this, changePhoto::class.java)
-            startActivity(toHome)
-            finish()
+            onBackPressed()
         }
         bind.button61.setOnClickListener {
             val toHome = Intent(this, changePhoto::class.java)

@@ -4,7 +4,9 @@ import Manage
 import StyleAdapter
 import android.Manifest
 import android.app.Dialog
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
@@ -17,14 +19,17 @@ import android.view.animation.AnimationUtils
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.testgeneratorphoto.databinding.ActivityChangePhotoBinding
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
@@ -36,7 +41,7 @@ import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import kotlinx.coroutines.launch
 
-class changePhoto : AppCompatActivity() { // Поменял название класса
+class changePhoto : AppCompatActivity(), LoadingFragmentListener, OnDataPass{
 
     lateinit var bind: ActivityChangePhotoBinding
     private val REQUEST_IMAGE_PICK = 1
@@ -49,6 +54,10 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
     lateinit var promptModel : List<Model>
     lateinit var modelsInCategory: List<Model>
     lateinit var categoryName: String
+    lateinit var sharedPreferences: SharedPreferences
+    var hasWatchedTutorial = false
+    var isThirdFragmentFinished = false
+
 
     private fun checkCameraPermission() {
         if (ContextCompat.checkSelfPermission(
@@ -85,17 +94,106 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
             }
         }
     }
+    override fun onBackPressed() {
+        val currentFragment = supportFragmentManager.findFragmentById(R.id.container)
+        if (currentFragment is FirstSplashScreen) {
+
+        } else {
+            super.onBackPressed()
+        }
+    }
+
+    override fun onLoadingFragmentFinished() {
+        runOnUiThread {
+            if (hasWatchedTutorial) {
+                bind.button2.visibility = View.VISIBLE
+                bind.cardView2.visibility = View.VISIBLE
+                bind.textApp.visibility = View.VISIBLE
+                bind.userIcon.visibility = View.VISIBLE
+                bind.textView4.visibility = View.VISIBLE
+            } else {
+                bind.button2.visibility = View.INVISIBLE
+
+                bind.cardView2.visibility = View.INVISIBLE
+                bind.textApp.visibility = View.INVISIBLE
+                bind.userIcon.visibility = View.INVISIBLE
+                bind.textView4.visibility = View.INVISIBLE
+            }
+        }
+
+    }
+    override fun onDataPassed(data: String) {
+        if(data == "true"){
+            bind.button2.visibility = View.VISIBLE
+            bind.cardView2.visibility = View.VISIBLE
+            bind.textApp.visibility = View.VISIBLE
+            bind.userIcon.visibility = View.VISIBLE
+            bind.textView4.visibility = View.VISIBLE
+        }else{
+
+        }
+    }
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
 
+        installSplashScreen()
+
         bind = ActivityChangePhotoBinding.inflate(layoutInflater)
         setContentView(bind.root)
+
+        sharedPreferences = this.getSharedPreferences("tutorial_pref", Context.MODE_PRIVATE)
+
+        hasWatchedTutorial = sharedPreferences.getBoolean("hasWatchedTutorial", false)
+        bind.button2.visibility = View.INVISIBLE
+
+        bind.textApp.visibility = View.INVISIBLE
+        bind.imageView4.visibility = View.INVISIBLE
+        bind.textView3.visibility = View.INVISIBLE
+        bind.userIcon.visibility = View.INVISIBLE
+        bind.textView4.visibility = View.INVISIBLE
+        bind.group.visibility = View.INVISIBLE
+
         auth = Firebase.auth
         val user = auth.currentUser
-        updateUI(user)
+
+        if(user == null){
+            signInAnonymously()
+        }
+        else{
+            updateUI(user)
+        }
+
+
+        if(!hasWatchedTutorial){
+
+            val fragment = FirstSplashScreen()
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.container, fragment)
+                .commit()
+
+            val dialog = Dialog(this)
+            dialog.setContentView(R.layout.alert_privacy_policy_on_continue)
+
+            val textView40 = dialog.findViewById<TextView>(R.id.textView40)
+            textView40.setOnClickListener {
+
+                dialog.dismiss()
+            }
+
+            dialog.show()
+        }else{
+            bind.button2.visibility = View.VISIBLE
+            bind.cardView2.visibility = View.VISIBLE
+            bind.textApp.visibility = View.VISIBLE
+            bind.userIcon.visibility = View.VISIBLE
+            bind.textView4.visibility = View.VISIBLE
+            bind.group.visibility = View.VISIBLE
+        }
+
 
         val animation = AnimationUtils.loadAnimation(this, R.anim.slide_up)
         findViewById<View>(R.id.changePhoto).startAnimation(animation)
@@ -124,6 +222,13 @@ class changePhoto : AppCompatActivity() { // Поменял название к�
         bind.textApp.paint.shader = uiIntarface.textApp(bind.textApp, "ReImage")
 
         // UI CLOSE
+
+        if(user == null){
+            signInAnonymously()
+        }
+        else{
+            updateUI(user)
+        }
 
 bind.aiArt.setOnClickListener {
     val i = Intent(this, MainActivity::class.java)
@@ -354,6 +459,51 @@ bind.aiArt.setOnClickListener {
         }
     }
 
+    public override fun onStart() {
+        super.onStart()
+        auth = FirebaseAuth.getInstance()
+        Log.e("auth.currentUser", auth.currentUser.toString())
+        if (auth.currentUser == null) {
+            signInAnonymously()
+        }
+        else{
+            updateUI(auth.currentUser)
+        }
+
+    }
+
+    override fun onResume() {
+        super.onResume()
+        auth = FirebaseAuth.getInstance()
+        Log.i("auth.currentUser", auth.currentUser.toString())
+        val user = auth.currentUser
+
+        if(auth.currentUser != null){
+            updateUI(auth.currentUser)
+        }
+
+    }
+
+
+    private fun signInAnonymously() {
+        auth.signInAnonymously()
+            .addOnCompleteListener(this) { task ->
+                if (task.isSuccessful) {
+                    Log.d("TAG", "signInAnonymously:success")
+                    val user = auth.currentUser
+                    updateUI(user)
+                } else {
+                    Log.w("TAG", "signInAnonymously:failure", task.exception)
+                    Toast.makeText(
+                        baseContext,
+                        "Authentication failed.",
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                    updateUI(null)
+                }
+            }
+    }
+
     private fun updateUI(user: FirebaseUser?) {
         Log.i("USER INFORMATION", user?.isAnonymous.toString())
 
@@ -398,6 +548,8 @@ bind.aiArt.setOnClickListener {
                         }else{
                             bind.button2.visibility = View.VISIBLE
                             bind.textView3.visibility = View.INVISIBLE
+                            bind.imageView4.visibility = View.INVISIBLE
+
                         }
                     }
                 }
@@ -407,6 +559,10 @@ bind.aiArt.setOnClickListener {
                 }
         }
         else{
+
+            if(user == null){
+                signInAnonymously()
+            }
             val uid = user!!.uid
             val db = FirebaseFirestore.getInstance()
             val userDoc = db.collection("Users").document(uid)
@@ -420,8 +576,21 @@ bind.aiArt.setOnClickListener {
                         val isUserPaid = documentSnapshot.getBoolean("isUserPaid") ?: false
                         val img2img = documentSnapshot.get("numberOfImg2Img").toString()
                         val buyCoins = documentSnapshot.get("buyCoins").toString()
+                        val time = documentSnapshot.getTimestamp("time")
+                        val currentTime = Timestamp.now()
+
+                        if (time != null && time.seconds < currentTime.seconds) {
+                            userDoc.update("isUserAccessGallery", false)
+                                .addOnSuccessListener {
+                                    Log.i("USER INFORMATION", "Data written successfully")
+                                }
+                                .addOnFailureListener {
+                                    Log.e("USER INFORMATION", "Failed to write data")
+                                }
+                        }
 
                         val isUserAccessGallery = documentSnapshot.getBoolean("isUserAccessGallery") ?: false
+
                         Log.i("isUserAccessGallery", isUserAccessGallery.toString())
 
                         Log.i("USER INFORMATION", "isUserPaid: $isUserPaid")
@@ -447,8 +616,29 @@ bind.aiArt.setOnClickListener {
                             bind.textView3.text = buyCoins
                         }else{
                             bind.button2.visibility = View.VISIBLE
-
                         }
+                    }
+                    else{
+                        val userData = hashMapOf(
+                            "isUserPaid" to false,
+                            "isUserAccessGallery" to false,
+                            "numberOfTxt2Img" to 5,
+                            "buyCoins" to 0,
+                            "imagesUrls" to arrayListOf<String>(),
+                            "numberOfImg2Img" to 1,
+                            "time" to Timestamp.now(),
+                            "uuid" to uid
+                        )
+
+                        userDoc.set(userData)
+                            .addOnSuccessListener {
+                                // Данные успешно записаны
+                                Log.i("USER INFORMATION", "Data written successfully")
+                            }
+                            .addOnFailureListener {
+                                // Ошибка записи данных
+                                Log.e("USER INFORMATION", "Failed to write data")
+                            }
                     }
                 }
                 .addOnFailureListener {

@@ -136,19 +136,6 @@ class MainActivity : AppCompatActivity() {
         loadAd()
         auth = FirebaseAuth.getInstance()
 
-        val dialog = Dialog(this)
-        dialog.setContentView(R.layout.alert_privacy_policy_on_continue)
-
-        val textView40 = dialog.findViewById<TextView>(R.id.textView40)
-        textView40.setOnClickListener {
-
-            // Закрыть диалоговое окно после нажатия
-            dialog.dismiss()
-        }
-
-// Показать Dialog
-        dialog.show()
-
         MobileAds.initialize(this){}
         val prompt = intent.getStringExtra("promptFromSeeAll")
         if (prompt != null){
@@ -252,8 +239,6 @@ bind.aiSelfies.setOnClickListener{
                 startActivity(seeAllArtIntent)
             }
         }
-
-
 
         // UI CLOSE
         bind.selfi.setOnClickListener {
@@ -512,10 +497,7 @@ bind.aiSelfies.setOnClickListener{
                 }
             }
         }
-
-
     }
-
     fun selectSize(){
         bind.apply {
             runOnUiThread {
@@ -609,7 +591,6 @@ bind.aiSelfies.setOnClickListener{
             }
         }
     }
-
     public override fun onStart() {
         super.onStart()
         Log.e("auth.currentUser", auth.currentUser.toString())
@@ -717,27 +698,7 @@ bind.aiSelfies.setOnClickListener{
                             isUserAccessGallery = false}
 
                     } else {
-                        // Документ не существует, выполняем запись данных
-                        val userData = hashMapOf(
-                            "isUserPaid" to false,
-                            "isUserAccessGallery" to false,
-                            "numberOfTxt2Img" to 5,
-                            "buyCoins" to 0,
-                            "imagesUrls" to arrayListOf<String>(),
-                            "numberOfImg2Img" to 1,
-                            "time" to Timestamp.now(),
-                            "uuid" to uid
-                        )
 
-                        userDoc.set(userData)
-                            .addOnSuccessListener {
-                                // Данные успешно записаны
-                                Log.i("USER INFORMATION", "Data written successfully")
-                            }
-                            .addOnFailureListener {
-                                // Ошибка записи данных
-                                Log.e("USER INFORMATION", "Failed to write data")
-                            }
                     }
                 }
                 .addOnFailureListener {

@@ -6,11 +6,20 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import com.example.testgeneratorphoto.databinding.ActivitySignUpBinding
+import com.facebook.AccessToken
+import com.facebook.CallbackManager
+import com.facebook.FacebookCallback
+import com.facebook.FacebookException
+import com.facebook.FacebookSdk
+import com.facebook.login.LoginManager
+import com.facebook.login.LoginResult
 import com.google.android.gms.auth.api.Auth
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.firebase.auth.FacebookAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
@@ -22,11 +31,64 @@ class signUp : AppCompatActivity() {
     val uiIntarface = UIIntreface()
     private lateinit var auth: FirebaseAuth
     val currentUser = FirebaseAuth.getInstance().currentUser
+    private lateinit var callbackManager: CallbackManager
+
+    private fun handleFacebookAccessToken(token: AccessToken) {
+        val credential = FacebookAuthProvider.getCredential(token.token)
+        val currentUser = auth.currentUser
+
+        currentUser?.let { user ->
+            user.linkWithCredential(credential)
+                .addOnCompleteListener(this) { task ->
+                    if (task.isSuccessful) {
+                        val linkedUser = task.result?.user
+                        val toHome = Intent(this, MainActivity::class.java)
+                        startActivity(toHome)
+                        finish()
+                    } else {
+                        Toast.makeText(
+                            this,
+                            "Authentication failed: ${task.exception?.message}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+        }
+    }
+
+    private val signInLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val resultCode = result.resultCode
+        val data = result.data
+
+        if (resultCode == RESULT_OK) {
+            callbackManager.onActivityResult(FACEBOOK_REQUEST_CODE, resultCode, data)
+        } else {
+            // Обработка отмены или ошибки регистрации
+            // Можно добавить соответствующую логику или обработку здесь
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         bind = ActivitySignUpBinding.inflate(layoutInflater)
         setContentView(bind.root)
+        callbackManager = CallbackManager.Factory.create()
+
+        LoginManager.getInstance().registerCallback(callbackManager,
+            object : FacebookCallback<LoginResult> {
+                override fun onSuccess(loginResult: LoginResult) {
+                    handleFacebookAccessToken(loginResult.accessToken)
+                }
+
+                override fun onCancel() {
+                    // Пользователь отменил вход через Facebook
+                }
+
+                override fun onError(error: FacebookException) {
+                    Log.e("FacebookLogin", "Error: ${error.message}")
+                }
+            })
+
 
         //UI
         bind.textView50.paintFlags = bind.textView50.paintFlags or Paint.UNDERLINE_TEXT_FLAG
@@ -38,6 +100,14 @@ class signUp : AppCompatActivity() {
             val back = Intent(this, properties::class.java)
             startActivity(back)
             finish()
+        }
+bind.imageButton14.setReadPermissions(listOf("email", "public_profile"))
+        bind.imageButton14.setOnClickListener {
+            val loginManager = LoginManager.getInstance()
+            loginManager.logInWithReadPermissions(
+                this,
+                listOf("email", "public_profile")
+            )
         }
 
         val gso = GoogleSignInOptions.Builder(
@@ -72,6 +142,8 @@ class signUp : AppCompatActivity() {
             startActivity(tologin)
         }
     }
+
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
@@ -85,6 +157,9 @@ class signUp : AppCompatActivity() {
                     Log.i("task", task.status.toString())
                 }
             }
+        }
+        else{
+            callbackManager.onActivityResult(resultCode, resultCode, data)
         }
     }
 
@@ -128,6 +203,8 @@ class signUp : AppCompatActivity() {
 
     companion object {
         private const val RC_SIGN_IN = 9001
+        private const val FACEBOOK_REQUEST_CODE = 64206
+
     }
 
 }

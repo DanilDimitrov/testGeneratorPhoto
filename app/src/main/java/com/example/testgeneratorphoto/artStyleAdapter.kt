@@ -32,22 +32,22 @@ class artStyleAdapter(var styles: ArrayList<artModel>) :
                 val context = itemView.context
 
                 if (adapterPosition != selectedItem) {
-                    // Сбросить эффект предыдущего выбранного элемента
                     if (selectedItem != -1) {
-                        val previousSelectedItem = selectedItem
-                        notifyItemChanged(previousSelectedItem)
+                        // Снимаем подсветку с предыдущего выбранного элемента
+                        styles[selectedItem].isSelected = false
+                        notifyItemChanged(selectedItem)
                     }
 
-                    // Установить эффект для текущего элемента
-                    val cornerRadiusDrawable = ContextCompat.getDrawable(context, R.drawable.select_item)
-                    card.background = cornerRadiusDrawable
+                    // Устанавливаем эффект для текущего элемента
+                    styles[adapterPosition].isSelected = true
+                    notifyItemChanged(adapterPosition)
 
                     selectedItem = adapterPosition
                     onItemClick?.invoke(prompt)
                 } else {
-                    // Если элемент уже выбран, сбросить эффект и сбросить selectedItem
-                    val cornerRadiusDrawable = ContextCompat.getDrawable(context, R.drawable.radio_unselect)
-                    card.background = cornerRadiusDrawable
+                    // Если элемент уже выбран, сбрасываем подсветку
+                    styles[adapterPosition].isSelected = false
+                    notifyItemChanged(adapterPosition)
                     selectedItem = -1
                 }
             }
@@ -70,6 +70,14 @@ class artStyleAdapter(var styles: ArrayList<artModel>) :
             .load(style.preview)
             .diskCacheStrategy(DiskCacheStrategy.DATA)
             .into(holder.styleImageView)
+
+        // Применяем подсветку на основе статуса isSelected элемента
+        val cornerRadiusDrawable = if (style.isSelected) {
+            ContextCompat.getDrawable(holder.card.context, R.drawable.select_item)
+        } else {
+            ContextCompat.getDrawable(holder.card.context, R.drawable.radio_unselect)
+        }
+        holder.card.background = cornerRadiusDrawable
     }
 
     fun setOnItemClickListener(listener: (artModel) -> Unit) {

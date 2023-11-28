@@ -11,6 +11,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
+import android.util.Base64
 import android.util.Log
 import android.util.TypedValue
 import android.view.LayoutInflater
@@ -23,7 +24,6 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -40,8 +40,11 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import kotlinx.coroutines.launch
+import java.security.MessageDigest
+import java.security.NoSuchAlgorithmException
 
-class changePhoto : AppCompatActivity(), LoadingFragmentListener, OnDataPass{
+
+class changePhoto : AppCompatActivity(), OnDataPass{
 
     lateinit var bind: ActivityChangePhotoBinding
     private val REQUEST_IMAGE_PICK = 1
@@ -103,25 +106,7 @@ class changePhoto : AppCompatActivity(), LoadingFragmentListener, OnDataPass{
         }
     }
 
-    override fun onLoadingFragmentFinished() {
-        runOnUiThread {
-            if (hasWatchedTutorial) {
-                bind.button2.visibility = View.VISIBLE
-                bind.cardView2.visibility = View.VISIBLE
-                bind.textApp.visibility = View.VISIBLE
-                bind.userIcon.visibility = View.VISIBLE
-                bind.textView4.visibility = View.VISIBLE
-            } else {
-                bind.button2.visibility = View.INVISIBLE
 
-                bind.cardView2.visibility = View.INVISIBLE
-                bind.textApp.visibility = View.INVISIBLE
-                bind.userIcon.visibility = View.INVISIBLE
-                bind.textView4.visibility = View.INVISIBLE
-            }
-        }
-
-    }
     override fun onDataPassed(data: String) {
         if(data == "true"){
             bind.button2.visibility = View.VISIBLE
@@ -134,16 +119,34 @@ class changePhoto : AppCompatActivity(), LoadingFragmentListener, OnDataPass{
         }
     }
 
+    fun hash(){
+        try {
+            val info = packageManager
+                .getPackageInfo(
+                    "com.example.testgeneratorphoto",
+                    PackageManager.GET_SIGNATURES
+                )
+            for (signature in info.signatures) {
+                val md = MessageDigest.getInstance("SHA")
+                md.update(signature.toByteArray())
+                Log.d("TAG", "KeyHash: " + Base64.encodeToString(md.digest(), Base64.DEFAULT))
+            }
+        } catch (e: PackageManager.NameNotFoundException) {
+            e.printStackTrace()
+        } catch (e: NoSuchAlgorithmException) {
+            e.printStackTrace()
+        }
+    }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
 
-        installSplashScreen()
-
         bind = ActivityChangePhotoBinding.inflate(layoutInflater)
         setContentView(bind.root)
+
+        hash()
 
         sharedPreferences = this.getSharedPreferences("tutorial_pref", Context.MODE_PRIVATE)
 
@@ -551,6 +554,27 @@ bind.aiArt.setOnClickListener {
                             bind.imageView4.visibility = View.INVISIBLE
 
                         }
+                    }else{
+                        val userData = hashMapOf(
+                            "isUserPaid" to false,
+                            "isUserAccessGallery" to false,
+                            "numberOfTxt2Img" to 5,
+                            "buyCoins" to 0,
+                            "imagesUrls" to arrayListOf<String>(),
+                            "numberOfImg2Img" to 1,
+                            "time" to Timestamp.now(),
+                            "uuid" to uid
+                        )
+
+                        userDoc.set(userData)
+                            .addOnSuccessListener {
+                                // Данные успешно записаны
+                                Log.i("USER INFORMATION", "Data written successfully")
+                            }
+                            .addOnFailureListener {
+                                // Ошибка записи данных
+                                Log.e("USER INFORMATION", "Failed to write data")
+                            }
                     }
                 }
                 .addOnFailureListener {

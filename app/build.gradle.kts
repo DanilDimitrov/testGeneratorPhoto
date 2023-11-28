@@ -55,8 +55,9 @@ dependencies {
     implementation("com.google.android.gms:play-services-auth:20.7.0")
     implementation("com.google.android.gms:play-services-wallet:19.2.1")
     implementation("androidx.fragment:fragment-ktx:1.6.2")
-    implementation("androidx.core:core-splashscreen:1.0.0")
-
+    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation("com.facebook.android:facebook-android-sdk:latest.release")
+    implementation("com.facebook.android:facebook-login:latest.release")
     implementation("com.google.firebase:firebase-database")
     implementation("com.stripe:stripe-android:20.34.4")
 

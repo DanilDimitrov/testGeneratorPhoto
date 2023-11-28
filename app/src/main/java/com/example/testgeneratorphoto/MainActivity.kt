@@ -324,6 +324,9 @@ bind.aiSelfies.setOnClickListener{
                             val numberOfTxt2Img = documentSnapshot.getLong("numberOfTxt2Img")
                             val buyCoins = documentSnapshot.getLong("buyCoins")
                             val isPaid = documentSnapshot.getBoolean("isUserPaid")
+                            Log.i("numberOfTxt2Img", numberOfTxt2Img.toString())
+                            Log.i("userUID", currentUser.uid.toString())
+
 
                             if ((numberOfTxt2Img != null && buyCoins != null) && (numberOfTxt2Img > 0 || buyCoins > 0) ) {
                                 // Перевод текста

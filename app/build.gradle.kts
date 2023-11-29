@@ -6,7 +6,7 @@ plugins {
 
 
 android {
-    namespace = "com.example.testgeneratorphoto"
+    namespace = "com.test.testgeneratorphoto"
     compileSdk = 34
 
     buildFeatures {
@@ -17,11 +17,11 @@ android {
         exclude ("META-INF/DEPENDENCIES")
     }
     defaultConfig {
-        applicationId = "com.example.testgeneratorphoto"
+        applicationId = "com.test.testgeneratorphoto"
         minSdk = 26
         targetSdk = 33
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
